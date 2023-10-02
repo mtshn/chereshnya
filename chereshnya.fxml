@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.web.WebView?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="723.0" prefWidth="981.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <ScrollPane prefHeight="723.0" prefWidth="986.0">
+         <content>
+            <TabPane prefHeight="716.0" prefWidth="977.0" tabClosingPolicy="UNAVAILABLE">
+               <tabs>
+                  <Tab text="Training">
+                     <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="550.0" prefWidth="878.0">
+                           <children>
+                              <ComboBox id="selectionmethod" layoutX="23.0" layoutY="292.0" prefHeight="17.0" prefWidth="353.0" promptText="Select descriptor selection method...">
+                                 <opaqueInsets>
+                                    <Insets />
+                                 </opaqueInsets>
+                                 <cursor>
+                                    <Cursor fx:constant="DISAPPEAR" />
+                                 </cursor>
+                              </ComboBox>
+                              <TextField id="excludernd" layoutX="281.0" layoutY="10.0" text="1" />
+                              <TextField id="lowvar" layoutX="291.0" layoutY="219.0" />
+                              <Label layoutX="23.0" layoutY="190.0" text="Remove high correlated descriptors:" />
+                              <Label layoutX="24.0" layoutY="228.0" text="Remove low variance descriptors:" />
+                              <TextArea id="equations" layoutX="24.0" layoutY="346.0" prefHeight="149.0" prefWidth="942.0" />
+                              <Label layoutX="23.0" layoutY="234.0" />
+                              <Label layoutX="24.0" layoutY="322.0" text="QSRR equations" />
+                              <TextArea id="accuracy" layoutX="24.0" layoutY="521.0" prefHeight="150.0" prefWidth="943.0" />
+                              <Label layoutX="26.0" layoutY="505.0" text="Model accuracy" />
+                              <Label layoutX="23.0" layoutY="14.0" text="Random exclude molecules:" />
+                              <TextField id="highcorr" layoutX="291.0" layoutY="186.0" text="0.999" />
+                              <Label layoutX="23.0" layoutY="42.0" text="Data set:" />
+                              <TextField id="datafile" layoutX="161.0" layoutY="38.0" text="il1.txt" />
+                              <Button id="openbutton" layoutX="336.0" layoutY="38.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="116.0" text="Open..." />
+                              <Label layoutX="24.0" layoutY="257.0" text="Number of selected descriptors" />
+                              <TextField id="ndesc" layoutX="293.0" layoutY="250.0" text="10" />
+                              <Label layoutX="477.0" layoutY="14.0" prefHeight="16.0" prefWidth="0.0" text="l2" />
+                              <TextField id="l2field" layoutX="496.0" layoutY="10.0" prefHeight="24.0" prefWidth="152.0" text="0" />
+                              <TextField id="svekla_path" layoutX="477.0" layoutY="59.0" prefHeight="24.0" prefWidth="351.0" text="./svekla" />
+                              <Label layoutX="479.0" layoutY="42.0" text="Path to SVEKLA jar file" />
+                              <Label layoutX="479.0" layoutY="85.0" text="Boruto rounds" />
+                              <TextField id="borutorounds" layoutX="479.0" layoutY="99.0" text="50" />
+                              <Label layoutX="659.0" layoutY="85.0" text="Lasso L1 (autotuing if zero)" />
+                              <TextField id="lassol1" layoutX="659.0" layoutY="99.0" text="0" />
+                              <Button id="button1" layoutX="803.0" layoutY="272.0" mnemonicParsing="false" prefHeight="64.0" prefWidth="160.0" />
+                              <Button id="selectdescriptorsbutton" layoutX="477.0" layoutY="131.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="151.0" text="Select descriptors" />
+                              <Button id="changedescriptorsbutton" layoutX="475.0" layoutY="162.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="179.0" text="Change descriptors set" />
+                              <Label layoutX="659.0" layoutY="14.0" prefHeight="16.0" prefWidth="73.0" text="N_repeats" />
+                              <TextField id="nrepeats" layoutX="732.0" layoutY="10.0" text="1" />
+                              <CheckBox id="errorbarstype" layoutX="475.0" layoutY="197.0" mnemonicParsing="false" text="Show error bars as 95% confidence interval instead st. dev." />
+                              <CheckBox id="shuffledescriptors" layoutX="475.0" layoutY="222.0" mnemonicParsing="false" text="Shuffle order of descriptors" />
+                              <Label layoutX="659.0" layoutY="131.0" text="Threshold for coefficients in LASSSO" />
+                              <TextField id="lassothreshold1" layoutX="659.0" layoutY="150.0" text="0.1" />
+                              <CheckBox id="seqaddeq" layoutX="475.0" layoutY="244.0" mnemonicParsing="false" text="Show all equations for seq. addition" />
+                           </children>
+                        </AnchorPane>
+                     </content>
+                  </Tab>
+                  <Tab text="Prediction">
+                     <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                           <children>
+                              <WebView id="webview" layoutX="14.0" layoutY="34.0" prefHeight="515.0" prefWidth="959.0" />
+                              <Label layoutX="547.0" layoutY="555.0" prefHeight="15.0" prefWidth="109.0" text="Descriptor name" />
+                              <TextField id="descriptorname" layoutX="545.0" layoutY="571.0" />
+                              <Button id="descriptorbutton" layoutX="722.0" layoutY="571.0" mnemonicParsing="false" text="Descriptor" />
+                              <TextField id="descriptorvalue" layoutX="811.0" layoutY="571.0" prefHeight="24.0" prefWidth="152.0" />
+                              <TextField id="rivalue" layoutX="20.0" layoutY="571.0" />
+                              <Label layoutX="20.0" layoutY="555.0" text="Predicted RI" />
+                              <Button id="predictbutton" layoutX="194.0" layoutY="571.0" mnemonicParsing="false" text="Predict" />
+                              <Label layoutX="14.0" layoutY="14.0" text="Data set:" />
+                              <TextField id="datafile2" layoutX="81.0" layoutY="10.0" text="il1.txt" />
+                              <Button id="predictfordatasetbutton" layoutX="258.0" layoutY="10.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="165.0" text="Predict for data set" />
+                              <Button id="alldescriptorsbutton" layoutX="723.0" layoutY="595.0" mnemonicParsing="false" text="All descriptors" />
+                              <Button id="alldescriptorsdatasetbutton" layoutX="430.0" layoutY="10.0" mnemonicParsing="false" text="All selected descriptors for data set" />
+                              <TextField id="outfiledescriptors" layoutX="733.0" layoutY="10.0" prefHeight="11.0" prefWidth="171.0" text="descriptors1.txt" />
+                              <Label layoutX="698.0" layoutY="14.0" text="File:" />
+                           </children></AnchorPane>
+                     </content>
+                  </Tab>
+                  <Tab text="Settings, Info">
+                    <content>
+                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+                    </content>
+                  </Tab>
+               </tabs>
+            </TabPane>
+         </content>
+      </ScrollPane>
+   </children>
+</VBox>

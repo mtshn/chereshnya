@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="175.0" prefWidth="521.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <ScrollPane id="scrollpane" prefHeight="168.0" prefWidth="521.0">
+         <content>
+            <Pane prefHeight="155.0" prefWidth="514.0">
+               <children>
+                  <Label layoutX="14.0" layoutY="14.0" text="Select descriptors set" />
+                  <CheckBox id="rdkit_d" layoutX="14.0" layoutY="57.0" mnemonicParsing="false" selected="true" text="RDKit" />
+                  <CheckBox id="cdk_d" layoutX="14.0" layoutY="30.0" mnemonicParsing="false" text="CDK" />
+                  <CheckBox id="svekla_d" layoutX="84.0" layoutY="30.0" mnemonicParsing="false" text="Deep Learing RI for standard SP" />
+                  <CheckBox layoutX="84.0" layoutY="57.0" mnemonicParsing="false" text="Linear model RI for standard SP" />
+                  <CheckBox layoutX="14.0" layoutY="87.0" mnemonicParsing="false" text="Fingerprints" />
+                  <Button id="okbutton" layoutX="252.0" layoutY="117.0" mnemonicParsing="false" text="OK" />
+                  <Button id="selectbutton" layoutX="305.0" layoutY="117.0" mnemonicParsing="false" text="Select specific descriptors" />
+                  <ImageView fitHeight="33.0" fitWidth="38.0" layoutX="325.0" layoutY="20.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@svekla.png" />
+                     </image>
+                  </ImageView>
+               </children>
+            </Pane>
+         </content>
+      </ScrollPane>
+   </children>
+</VBox>
