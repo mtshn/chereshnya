@@ -11,4 +11,6 @@ if df.shape[1]<=11:
 sns.heatmap(abs(df.corr()),cmap="RdPu", annot=a)  
 plt.subplots_adjust(bottom=0.33, top=0.97, left=0.25, right=1.04)
 plt.savefig("heatmap.png")
+plt.savefig("heatmap.pdf")
+
 

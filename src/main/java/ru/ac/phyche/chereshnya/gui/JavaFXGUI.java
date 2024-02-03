@@ -1,5 +1,6 @@
 package ru.ac.phyche.chereshnya.gui;
 
+import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -68,19 +69,22 @@ import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
-import javafx.scene.text.Font;
 import javafx.scene.transform.Transform;
 import javafx.scene.web.WebView;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.converter.FloatStringConverter;
 import javafx.util.converter.NumberStringConverter;
 import ru.ac.phyche.chereshnya.ChemDataset;
 import ru.ac.phyche.chereshnya.ChemUtils;
+import ru.ac.phyche.chereshnya.PythonRunner;
 import ru.ac.phyche.chereshnya.featuregenerators.CDKDescriptorsGenerator;
+import ru.ac.phyche.chereshnya.featuregenerators.CDKFingerprintsGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.CombinedFeaturesGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.FeaturesGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.FuncGroupsCDKGenerator;
+import ru.ac.phyche.chereshnya.featuregenerators.LinearModelRIGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.MQNDescriptorsGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.PreprocessedFeaturesGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.RDKitDescriptorsGenerator;
@@ -95,11 +99,14 @@ import ru.ac.phyche.chereshnya.featurepreprocessors.FeaturesPreprocessor;
 import ru.ac.phyche.chereshnya.featurepreprocessors.ReplaceNaNsPreprocessor;
 import ru.ac.phyche.chereshnya.featurepreprocessors.Scale01FeaturesPreprocessor;
 import ru.ac.phyche.chereshnya.featurepreprocessors.SelectedFeaturesPreprocessor;
+import ru.ac.phyche.chereshnya.featureselectors.BorutaBoosting;
 import ru.ac.phyche.chereshnya.featureselectors.BorutaForest;
 import ru.ac.phyche.chereshnya.featureselectors.FeatureImportances;
 import ru.ac.phyche.chereshnya.featureselectors.FeatureSelector;
+import ru.ac.phyche.chereshnya.featureselectors.GA;
 import ru.ac.phyche.chereshnya.featureselectors.LASSONonSequential;
 import ru.ac.phyche.chereshnya.featureselectors.NothingDoSelector;
+import ru.ac.phyche.chereshnya.featureselectors.PLSVIP;
 import ru.ac.phyche.chereshnya.featureselectors.SeqAdditionBestF;
 import ru.ac.phyche.chereshnya.featureselectors.SeqAdditionBestLoss;
 import ru.ac.phyche.chereshnya.featureselectors.SeqAdditionOLSMDAE;
@@ -143,8 +150,30 @@ public class JavaFXGUI extends Application {
 		return ModelRI.accuracyMeasuresValidation(predicted, observed);
 	}
 
+	private static class BarchatStyleSettings {
+		boolean barChatHideCaptions;
+		boolean barChatHideRdkit;
+		boolean barChatHideY;
+		int axisFontBarchat;
+		int yTickBarchat;
+		String colorBarchat;
+		int xLabeslAngleBarchat;
+
+		BarchatStyleSettings(CheckBox barChatHideCaptions, CheckBox barChatHideRdkit, CheckBox barChatHideY,
+				TextField axisFontBarchat, TextField yTickBarchat, TextField colorBarchat,
+				TextField xLabeslAngleBarchat) {
+			this.barChatHideCaptions = barChatHideCaptions.selectedProperty().get();
+			this.barChatHideRdkit = barChatHideRdkit.selectedProperty().get();
+			this.barChatHideY = barChatHideY.selectedProperty().get();
+			this.axisFontBarchat = Integer.parseInt(axisFontBarchat.getText());
+			this.yTickBarchat = Integer.parseInt(yTickBarchat.getText());
+			this.colorBarchat = colorBarchat.getText();
+			this.xLabeslAngleBarchat = Integer.parseInt(xLabeslAngleBarchat.getText());
+		}
+	}
+
 	private static XChartPanel importancesChart(FeatureImportances.FeatureImportance[] importances, int nTry,
-			boolean showConfidenceIntervalInsteadStdev) throws IOException {
+			boolean showConfidenceIntervalInsteadStdev, BarchatStyleSettings style) throws IOException {
 		CategoryChart chart = (new CategoryChartBuilder()).xAxisTitle("Descriptors").yAxisTitle("Importances")
 				.width(800).height(600).title("Importances of descriptors").build();
 		ArrayList<String> labels = new ArrayList<String>();
@@ -152,8 +181,12 @@ public class JavaFXGUI extends Application {
 		ArrayList<Double> errors = new ArrayList<Double>();
 
 		int i = 0;
-		while ((i < 30) && (i < importances.length)) {
-			labels.add(importances[importances.length - 1 - i].name);
+		while ((i < 20) && (i < importances.length)) {
+			String s = importances[importances.length - 1 - i].name;
+			if (style.barChatHideRdkit) {
+				s = s.replace("RDKIT_", " ").trim();
+			}
+			labels.add(s);
 			values.add((double) importances[importances.length - 1 - i].value);
 			double stdev = (double) importances[importances.length - 1 - i].stdev;
 			if (!showConfidenceIntervalInsteadStdev) {
@@ -176,7 +209,19 @@ public class JavaFXGUI extends Application {
 		chart.getStyler().setChartBackgroundColor(java.awt.Color.WHITE);
 		chart.getStyler().setPlotGridLinesVisible(false);
 		chart.getStyler().setLegendVisible(false);
-		chart.getStyler().setXAxisLabelRotation(90);
+		chart.getStyler().setYAxisTickMarkSpacingHint(style.yTickBarchat);
+		chart.getStyler().setXAxisLabelRotation(style.xLabeslAngleBarchat);
+		chart.getStyler().setSeriesColors(new java.awt.Color[] { java.awt.Color.decode(style.colorBarchat) });
+		if (style.barChatHideY) {
+			chart.getStyler().setYAxisTicksVisible(false);
+			chart.getStyler().setYAxisTitleVisible(false);
+		}
+		if (style.barChatHideCaptions) {
+			chart.getStyler().setYAxisTitleVisible(false);
+			chart.getStyler().setXAxisTitleVisible(false);
+			chart.getStyler().setChartTitleVisible(false);
+		}
+		chart.getStyler().setAxisTickLabelsFont(new Font(null, Font.BOLD, style.axisFontBarchat));
 		VectorGraphicsEncoder.saveVectorGraphic(chart, "barchart.pdf", VectorGraphicsFormat.PDF);
 		return new XChartPanel(chart);
 	}
@@ -255,16 +300,7 @@ public class JavaFXGUI extends Application {
 	}
 
 	private static void computeHeatmap() {
-		if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC_OSX) {
-			ProcessBuilder p = new ProcessBuilder("./python/bin/python3", "./heatmap.py").inheritIO();
-			try {
-				Process pr = p.start();
-				pr.waitFor();
-			} catch (Exception e) {
-				throw (new RuntimeException(e.getMessage()));
-			}
-
-		}
+		PythonRunner.runPython("./heatmap.py", "");
 	}
 
 	private static String minMaxAverageVariationInfo(FeaturesGenerator gen, ChemDataset ds) {
@@ -305,6 +341,9 @@ public class JavaFXGUI extends Application {
 			lst.add(new RDKitDescriptorsGenerator());
 			lst.add(new FuncGroupsCDKGenerator());
 			lst.add(new MQNDescriptorsGenerator());
+			lst.add((new CDKFingerprintsGenerator(ChemUtils.FingerprintsType.KLEKOTA_ADDITIVE)));
+			lst.add(new LinearModelRIGenerator());
+
 			CombinedFeaturesGenerator gen1 = new CombinedFeaturesGenerator(
 					lst.toArray(new FeaturesGenerator[lst.size()]));
 			float[] d = gen1.featuresForMolNoPrecompute(smilesCan);
@@ -416,6 +455,9 @@ public class JavaFXGUI extends Application {
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+
+		Locale.setDefault(Locale.US);
+
 		primaryStage.setTitle("CHERESHNYA: A GUI for quantitative structure-retention relationships");
 		FXMLLoader loader = new FXMLLoader();
 		loader.setLocation(new File("./chereshnya.fxml").toURI().toURL());
@@ -451,6 +493,8 @@ public class JavaFXGUI extends Application {
 		TextField borutoRounds = (TextField) vBox.lookup("#borutorounds");
 		TextField outFileDescriptors = (TextField) vBox.lookup("#outfiledescriptors");
 		TextField nRepeats = (TextField) vBox.lookup("#nrepeats");
+		TextField nCompPLS = (TextField) vBox.lookup("#n_comp_pls");
+		TextField nGenGAP = (TextField) vBox.lookup("#n_gen_ga");
 
 		TextArea equations = (TextArea) vBox.lookup("#equations");
 		TextArea accuracy = (TextArea) vBox.lookup("#accuracy");
@@ -465,9 +509,12 @@ public class JavaFXGUI extends Application {
 		combobox.getItems().add("Sequental OLS RMSE");
 		combobox.getItems().add("Sequental OLS MDAE");
 		combobox.getItems().add("Sequental OLS, max F-score goodness-of-fit");
+		combobox.getItems().add("PLS VIP");
 		combobox.getItems().add("Boruta forest");
+		combobox.getItems().add("Boruta gradient boosting");
 		combobox.getItems().add("Seq removing forest");
 		combobox.getItems().add("LASSO non sequental (required number of descriptors is ignored)");
+		combobox.getItems().add("Genetic algorithm");
 		combobox.getItems().add("No descriptor selection");
 
 		// -fx-text-box-border: #8710e2;
@@ -483,8 +530,10 @@ public class JavaFXGUI extends Application {
 		Button buttonAllDescriptorsDataset = (Button) vBox.lookup("#alldescriptorsdatasetbutton");
 		Button buttonSelectDescriptors = (Button) vBox.lookup("#selectdescriptorsbutton");
 		Button buttonChangeDescriptors = (Button) vBox.lookup("#changedescriptorsbutton");
+		Button openButton = (Button) vBox.lookup("#openbutton");
 
 		TextArea outArea = (TextArea) vBox2.lookup("#outfield");
+		outArea.setEditable(false);
 		AnchorPane tabWithCharts = (AnchorPane) vBox2.lookup("#tabwithcharts");
 		TabPane resultsTabPane = (TabPane) vBox2.lookup("#resultstabpane");
 
@@ -492,6 +541,14 @@ public class JavaFXGUI extends Application {
 		img.setFitHeight(60);
 		img.setPreserveRatio(true);
 		button1.setGraphic(img);
+
+		CheckBox barChatHideCaptions = (CheckBox) vBox.lookup("#barchat_hide_captions");
+		CheckBox barChatHideRdkit = (CheckBox) vBox.lookup("#barchat_hide_rdkit");
+		CheckBox barChatHideY = (CheckBox) vBox.lookup("#barchat_hide_y");
+		TextField axisFontBarchat = (TextField) vBox.lookup("#barchat_axisfont");
+		TextField yTickBarchat = (TextField) vBox.lookup("#barchat_y_tick_spacing");
+		TextField colorBarchat = (TextField) vBox.lookup("#barchat_color");
+		TextField xLabeslAngleBarchat = (TextField) vBox.lookup("#barchat_x_labels_angle");
 
 		String path = new java.io.File(".").getCanonicalPath();
 		webView.getEngine().load("file://" + path + "/moledit.html");
@@ -574,6 +631,10 @@ public class JavaFXGUI extends Application {
 						CheckBox cdkD = (CheckBox) vBox1.lookup("#cdk_d");
 						CheckBox rdkitD = (CheckBox) vBox1.lookup("#rdkit_d");
 						CheckBox sveklaD = (CheckBox) vBox1.lookup("#svekla_d");
+						CheckBox klekotaD = (CheckBox) vBox1.lookup("#klekota_d");
+						CheckBox linearriD = (CheckBox) vBox1.lookup("#linear_ri_d");
+						CheckBox funcgroupsD = (CheckBox) vBox1.lookup("#funcgroups_d");
+
 						ArrayList<FeaturesGenerator> lst = new ArrayList<FeaturesGenerator>();
 						if (rdkitD.selectedProperty().get()) {
 							lst.add(new RDKitDescriptorsGenerator());
@@ -583,6 +644,15 @@ public class JavaFXGUI extends Application {
 						}
 						if (sveklaD.selectedProperty().get()) {
 							lst.add(new SVEKLAGeneratorRI(sveklaPath.getText()));
+						}
+						if (klekotaD.selectedProperty().get()) {
+							lst.add(new CDKFingerprintsGenerator(ChemUtils.FingerprintsType.KLEKOTA_ADDITIVE));
+						}
+						if (linearriD.selectedProperty().get()) {
+							lst.add(new LinearModelRIGenerator());
+						}
+						if (funcgroupsD.selectedProperty().get()) {
+							lst.add(new FuncGroupsCDKGenerator());
 						}
 						gen1.g = new CombinedFeaturesGenerator(lst.toArray(new FeaturesGenerator[lst.size()]));
 						gen1.selectedDescriptors = new ArrayList<Integer>();
@@ -845,16 +915,25 @@ public class JavaFXGUI extends Application {
 							fs = new SeqAdditionBestF();
 						}
 						if (combobox.getSelectionModel().getSelectedIndex() == 3) {
-							fs = new BorutaForest(Integer.parseInt(borutoRounds.getText()));
+							fs = new PLSVIP(Integer.parseInt(nCompPLS.getText()));
 						}
 						if (combobox.getSelectionModel().getSelectedIndex() == 4) {
-							fs = new SeqRemovingForest(10);
+							fs = new BorutaForest(Integer.parseInt(borutoRounds.getText()));
 						}
 						if (combobox.getSelectionModel().getSelectedIndex() == 5) {
+							fs = new BorutaBoosting(Integer.parseInt(borutoRounds.getText()));
+						}
+						if (combobox.getSelectionModel().getSelectedIndex() == 6) {
+							fs = new SeqRemovingForest(10);
+						}
+						if (combobox.getSelectionModel().getSelectedIndex() == 7) {
 							fs = new LASSONonSequential(Float.parseFloat(lassoL1.getText()),
 									Float.parseFloat(lassoThreshold.getText()));
 						}
-						if (combobox.getSelectionModel().getSelectedIndex() == 6) {
+						if (combobox.getSelectionModel().getSelectedIndex() == 8) {
+							fs = new GA(Integer.parseInt(nGenGAP.getText()));
+						}
+						if (combobox.getSelectionModel().getSelectedIndex() == 9) {
 							fs = new NothingDoSelector();
 						}
 
@@ -903,7 +982,9 @@ public class JavaFXGUI extends Application {
 						System.out.println(imp.length + "x");
 						Arrays.sort(imp);
 						tabWithCharts.getChildren().clear();
-						JPanel barchart = importancesChart(imp, nTry, errorBarsType.selectedProperty().get());
+						BarchatStyleSettings style = new BarchatStyleSettings(barChatHideCaptions, barChatHideRdkit,
+								barChatHideY, axisFontBarchat, yTickBarchat, colorBarchat, xLabeslAngleBarchat);
+						JPanel barchart = importancesChart(imp, nTry, errorBarsType.selectedProperty().get(), style);
 						SwingNode sn = new SwingNode();
 						sn.setContent(barchart);
 						tabWithCharts.getChildren().add(sn);
@@ -932,6 +1013,17 @@ public class JavaFXGUI extends Application {
 			}
 		});
 
+		EventHandler<ActionEvent> runOpenButton = (new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+				FileChooser fileChooser = new FileChooser();
+				File file = fileChooser.showOpenDialog(primaryStage);
+				if (file != null) {
+					datafile.setText(file.getAbsolutePath());
+				}
+			}
+		});
+
 		button1.setOnAction(runQSRR);
 		buttonDescriptor.setOnAction(runDescriptor);
 		buttonAllDescriptors.setOnAction(runAllDescriptors);
@@ -940,7 +1032,7 @@ public class JavaFXGUI extends Application {
 		buttonSelectDescriptors.setOnAction(runSelectDescriptors);
 		buttonChangeDescriptors.setOnAction(runSelect);
 		buttonAllDescriptorsDataset.setOnAction(runDescriptorsAllDataset);
-
+		openButton.setOnAction(runOpenButton);
 	}
 
 	public static void main(String[] args) {

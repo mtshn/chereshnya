@@ -1,0 +1,1 @@
+LIBLINEAR  C: 0.08618636 p: 1.443285E-7 solver_type: 0

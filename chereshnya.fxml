@@ -13,6 +13,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 <?import javafx.scene.web.WebView?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="723.0" prefWidth="981.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1">
@@ -25,7 +26,7 @@
                      <content>
                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="550.0" prefWidth="878.0">
                            <children>
-                              <ComboBox id="selectionmethod" layoutX="23.0" layoutY="292.0" prefHeight="17.0" prefWidth="353.0" promptText="Select descriptor selection method...">
+                              <ComboBox id="selectionmethod" layoutX="14.0" layoutY="170.0" prefHeight="17.0" prefWidth="353.0" promptText="Select descriptor selection method...">
                                  <opaqueInsets>
                                     <Insets />
                                  </opaqueInsets>
@@ -33,40 +34,40 @@
                                     <Cursor fx:constant="DISAPPEAR" />
                                  </cursor>
                               </ComboBox>
-                              <TextField id="excludernd" layoutX="281.0" layoutY="10.0" text="1" />
-                              <TextField id="lowvar" layoutX="291.0" layoutY="219.0" />
-                              <Label layoutX="23.0" layoutY="190.0" text="Remove high correlated descriptors:" />
-                              <Label layoutX="24.0" layoutY="228.0" text="Remove low variance descriptors:" />
-                              <TextArea id="equations" layoutX="24.0" layoutY="346.0" prefHeight="149.0" prefWidth="942.0" />
+                              <TextField id="excludernd" layoutX="792.0" layoutY="93.0" text="1" />
+                              <TextArea id="equations" editable="false" layoutX="18.0" layoutY="242.0" prefHeight="176.0" prefWidth="942.0" wrapText="true" />
                               <Label layoutX="23.0" layoutY="234.0" />
-                              <Label layoutX="24.0" layoutY="322.0" text="QSRR equations" />
-                              <TextArea id="accuracy" layoutX="24.0" layoutY="521.0" prefHeight="150.0" prefWidth="943.0" />
-                              <Label layoutX="26.0" layoutY="505.0" text="Model accuracy" />
-                              <Label layoutX="23.0" layoutY="14.0" text="Random exclude molecules:" />
-                              <TextField id="highcorr" layoutX="291.0" layoutY="186.0" text="0.999" />
-                              <Label layoutX="23.0" layoutY="42.0" text="Data set:" />
-                              <TextField id="datafile" layoutX="161.0" layoutY="38.0" text="il1.txt" />
-                              <Button id="openbutton" layoutX="336.0" layoutY="38.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="116.0" text="Open..." />
-                              <Label layoutX="24.0" layoutY="257.0" text="Number of selected descriptors" />
-                              <TextField id="ndesc" layoutX="293.0" layoutY="250.0" text="10" />
-                              <Label layoutX="477.0" layoutY="14.0" prefHeight="16.0" prefWidth="0.0" text="l2" />
-                              <TextField id="l2field" layoutX="496.0" layoutY="10.0" prefHeight="24.0" prefWidth="152.0" text="0" />
-                              <TextField id="svekla_path" layoutX="477.0" layoutY="59.0" prefHeight="24.0" prefWidth="351.0" text="./svekla" />
-                              <Label layoutX="479.0" layoutY="42.0" text="Path to SVEKLA jar file" />
-                              <Label layoutX="479.0" layoutY="85.0" text="Boruto rounds" />
-                              <TextField id="borutorounds" layoutX="479.0" layoutY="99.0" text="50" />
-                              <Label layoutX="659.0" layoutY="85.0" text="Lasso L1 (autotuing if zero)" />
-                              <TextField id="lassol1" layoutX="659.0" layoutY="99.0" text="0" />
-                              <Button id="button1" layoutX="803.0" layoutY="272.0" mnemonicParsing="false" prefHeight="64.0" prefWidth="160.0" />
-                              <Button id="selectdescriptorsbutton" layoutX="477.0" layoutY="131.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="151.0" text="Select descriptors" />
-                              <Button id="changedescriptorsbutton" layoutX="475.0" layoutY="162.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="179.0" text="Change descriptors set" />
-                              <Label layoutX="659.0" layoutY="14.0" prefHeight="16.0" prefWidth="73.0" text="N_repeats" />
-                              <TextField id="nrepeats" layoutX="732.0" layoutY="10.0" text="1" />
-                              <CheckBox id="errorbarstype" layoutX="475.0" layoutY="197.0" mnemonicParsing="false" text="Show error bars as 95% confidence interval instead st. dev." />
-                              <CheckBox id="shuffledescriptors" layoutX="475.0" layoutY="222.0" mnemonicParsing="false" text="Shuffle order of descriptors" />
-                              <Label layoutX="659.0" layoutY="131.0" text="Threshold for coefficients in LASSSO" />
-                              <TextField id="lassothreshold1" layoutX="659.0" layoutY="150.0" text="0.1" />
-                              <CheckBox id="seqaddeq" layoutX="475.0" layoutY="244.0" mnemonicParsing="false" text="Show all equations for seq. addition" />
+                              <Label layoutX="20.0" layoutY="221.0" text="QSRR equations">
+                                 <font>
+                                    <Font name="System Bold" size="16.0" />
+                                 </font></Label>
+                              <TextArea id="accuracy" editable="false" layoutX="18.0" layoutY="448.0" prefHeight="182.0" prefWidth="943.0" wrapText="true" />
+                              <Label layoutX="19.0" layoutY="428.0" text="Model accuracy">
+                                 <font>
+                                    <Font name="System Bold" size="16.0" />
+                                 </font></Label>
+                              <Label layoutX="566.0" layoutY="69.0" text="Number of molecules randomly excluded during each repeat" />
+                              <Label layoutX="14.0" layoutY="12.0" text="Data set:">
+                                 <font>
+                                    <Font size="16.0" />
+                                 </font></Label>
+                              <TextField id="datafile" layoutX="105.0" layoutY="10.0" text="il1.txt" />
+                              <Button id="openbutton" layoutX="283.0" layoutY="10.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="116.0" text="Open..." />
+                              <Label layoutX="14.0" layoutY="132.0" text="Number of descriptors in QSRR equation">
+                                 <font>
+                                    <Font size="16.0" />
+                                 </font></Label>
+                              <TextField id="ndesc" layoutX="352.0" layoutY="130.0" text="10" />
+                              <Button id="button1" layoutX="798.0" layoutY="144.0" mnemonicParsing="false" prefHeight="64.0" prefWidth="160.0" />
+                              <Button id="selectdescriptorsbutton" layoutX="563.0" layoutY="10.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="207.0" text="Select inital descriptors set" />
+                              <Button id="changedescriptorsbutton" layoutX="563.0" layoutY="38.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="213.0" text="Change initial descriptors set" />
+                              <Label layoutX="784.0" layoutY="14.0" prefHeight="16.0" prefWidth="170.0" text="Number of repeats" />
+                              <TextField id="nrepeats" layoutX="792.0" layoutY="38.0" text="1" />
+                              <Label layoutX="14.0" layoutY="39.0" prefHeight="91.0" prefWidth="440.0" text="Each line of the data set file should contain space-separated SMILES string and retention index. There should be no spaces in the beginning of the line before SMILES string.  One line - one compound. n-Alkanes-based retention indices and retention times (in seconds!) are accepted. Retention time should be in milliseconds for GC x GC second dimension time." wrapText="true">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                              </Label>
                            </children>
                         </AnchorPane>
                      </content>
@@ -75,27 +76,96 @@
                      <content>
                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                            <children>
-                              <WebView id="webview" layoutX="14.0" layoutY="34.0" prefHeight="515.0" prefWidth="959.0" />
-                              <Label layoutX="547.0" layoutY="555.0" prefHeight="15.0" prefWidth="109.0" text="Descriptor name" />
-                              <TextField id="descriptorname" layoutX="545.0" layoutY="571.0" />
-                              <Button id="descriptorbutton" layoutX="722.0" layoutY="571.0" mnemonicParsing="false" text="Descriptor" />
-                              <TextField id="descriptorvalue" layoutX="811.0" layoutY="571.0" prefHeight="24.0" prefWidth="152.0" />
-                              <TextField id="rivalue" layoutX="20.0" layoutY="571.0" />
-                              <Label layoutX="20.0" layoutY="555.0" text="Predicted RI" />
-                              <Button id="predictbutton" layoutX="194.0" layoutY="571.0" mnemonicParsing="false" text="Predict" />
+                              <WebView id="webview" layoutX="14.0" layoutY="74.0" prefHeight="409.0" prefWidth="649.0" />
+                              <Label layoutX="670.0" layoutY="210.0" prefHeight="15.0" prefWidth="109.0" text="Descriptor name" />
+                              <TextField id="descriptorname" layoutX="671.0" layoutY="232.0" prefHeight="24.0" prefWidth="292.0" />
+                              <Button id="descriptorbutton" layoutX="671.0" layoutY="259.0" mnemonicParsing="false" text="Calculate descriptor for molecule" />
+                              <TextField id="descriptorvalue" layoutX="671.0" layoutY="283.0" prefHeight="24.0" prefWidth="295.0" />
+                              <TextField id="rivalue" layoutX="297.0" layoutY="44.0" prefHeight="24.0" prefWidth="270.0" />
+                              <Button id="predictbutton" layoutX="14.0" layoutY="44.0" mnemonicParsing="false" text="Predict retention using trained model">
+                                 <font>
+                                    <Font name="System Bold" size="12.0" />
+                                 </font></Button>
                               <Label layoutX="14.0" layoutY="14.0" text="Data set:" />
                               <TextField id="datafile2" layoutX="81.0" layoutY="10.0" text="il1.txt" />
                               <Button id="predictfordatasetbutton" layoutX="258.0" layoutY="10.0" mnemonicParsing="false" prefHeight="24.0" prefWidth="165.0" text="Predict for data set" />
-                              <Button id="alldescriptorsbutton" layoutX="723.0" layoutY="595.0" mnemonicParsing="false" text="All descriptors" />
-                              <Button id="alldescriptorsdatasetbutton" layoutX="430.0" layoutY="10.0" mnemonicParsing="false" text="All selected descriptors for data set" />
-                              <TextField id="outfiledescriptors" layoutX="733.0" layoutY="10.0" prefHeight="11.0" prefWidth="171.0" text="descriptors1.txt" />
-                              <Label layoutX="698.0" layoutY="14.0" text="File:" />
+                              <Button id="alldescriptorsbutton" layoutX="670.0" layoutY="133.0" mnemonicParsing="false" text="Calculate all descriptors for the molecule" />
+                              <Button id="alldescriptorsdatasetbutton" layoutX="677.0" layoutY="74.0" mnemonicParsing="false" text="All selected descriptors for data set" />
+                              <TextField id="outfiledescriptors" layoutX="756.0" layoutY="102.0" prefHeight="11.0" prefWidth="171.0" text="descriptors1.txt" />
+                              <Label layoutX="677.0" layoutY="106.0" text="Output file:" />
+                              <Label layoutX="507.0" layoutY="6.0" text="All functionality on the &quot;Prediction&quot; tab work after a model was trained">
+                                 <font>
+                                    <Font name="System Italic" size="13.0" />
+                                 </font>
+                              </Label>
                            </children></AnchorPane>
                      </content>
                   </Tab>
                   <Tab text="Settings, Info">
                     <content>
-                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+                      <AnchorPane id="barchat_bar_color" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                           <children>
+                              <ScrollPane layoutX="5.0" layoutY="14.0" prefHeight="667.0" prefWidth="967.0">
+                                <content>
+                                  <AnchorPane maxHeight="800.0" minHeight="800.0" prefHeight="800.0">
+                                       <children>
+                                          <CheckBox id="barchat_hide_captions" layoutX="9.0" layoutY="167.0" mnemonicParsing="false" text="Hide captions" />
+                                          <CheckBox id="barchat_hide_rdkit" layoutX="133.0" layoutY="167.0" mnemonicParsing="false" text="Remove prefix &quot;RDKIT_&quot;" />
+                                          <CheckBox id="barchat_hide_y" layoutX="324.0" layoutY="167.0" mnemonicParsing="false" text="Hide Y axis" />
+                                          <Label layoutX="433.0" layoutY="168.0" text="Axis font size" />
+                                          <TextField id="barchat_axisfont" layoutX="522.0" layoutY="163.0" prefHeight="24.0" prefWidth="61.0" text="12" />
+                                          <Label layoutX="589.0" layoutY="167.0" text="Y axis tick spacing" />
+                                          <TextField id="barchat_y_tick_spacing" layoutX="714.0" layoutY="164.0" prefHeight="24.0" prefWidth="64.0" text="50" />
+                                          <Label layoutX="9.0" layoutY="195.0" text="Color of bars" />
+                                          <TextField id="barchat_color" layoutX="99.0" layoutY="191.0" prefHeight="24.0" prefWidth="88.0" text="#dd55bb" />
+                                          <Label layoutX="198.0" layoutY="195.0" text="Angle of x labels" />
+                                          <TextField id="barchat_x_labels_angle" layoutX="311.0" layoutY="191.0" prefHeight="24.0" prefWidth="87.0" text="90" />
+                                          <Label layoutX="9.0" layoutY="146.0" text="Bar chart settings">
+                                             <font>
+                                                <Font name="System Bold Italic" size="14.0" />
+                                             </font>
+                                          </Label>
+                                          <Label layoutX="9.0" layoutY="7.0" text="General descriptor selection and linear regression settings">
+                                             <font>
+                                                <Font name="System Bold Italic" size="14.0" />
+                                             </font>
+                                          </Label>
+                                          <Label layoutX="7.0" layoutY="20.0" prefHeight="48.0" prefWidth="753.0" text="Remove descriptors with variance less then (variance are calculated after scaling into [0;1] range, left empty if remove only constant descriptors)" wrapText="true" />
+                                          <TextField id="lowvar" layoutX="750.0" layoutY="25.0" prefHeight="24.0" prefWidth="186.0" promptText="Minimal allowed variance" />
+                                          <Label layoutX="7.0" layoutY="78.0" prefHeight="16.0" prefWidth="347.0" text="L2-regularization constant for final linear regression" />
+                                          <TextField id="l2field" layoutX="359.0" layoutY="74.0" prefHeight="24.0" prefWidth="71.0" text="0" />
+                                          <Label layoutX="7.0" layoutY="104.0" text="Remove descriptors that are high-correlated with other descriptors (r &gt; r0); r0 = " />
+                                          <CheckBox id="shuffledescriptors" layoutX="705.0" layoutY="77.0" mnemonicParsing="false" text="Shuffle order of descriptors" />
+                                          <CheckBox id="seqaddeq" layoutX="437.0" layoutY="76.0" mnemonicParsing="false" text="Show all equations for seq. addition" />
+                                          <TextField id="highcorr" layoutX="538.0" layoutY="100.0" prefHeight="24.0" prefWidth="185.0" text="0.999" />
+                                          <CheckBox id="errorbarstype" layoutX="408.0" layoutY="194.0" mnemonicParsing="false" text="Show error bars as 95% confidence interval instead st. dev." />
+                                          <Label layoutX="9.0" layoutY="236.0" text="Specific settings of various descriptor selection methods">
+                                             <font>
+                                                <Font name="System Bold Italic" size="14.0" />
+                                             </font>
+                                          </Label>
+                                          <Label layoutX="9.0" layoutY="260.0" text="Boruto rounds" />
+                                          <TextField id="borutorounds" layoutX="112.0" layoutY="256.0" text="80" />
+                                          <Label layoutX="302.0" layoutY="260.0" prefHeight="16.0" prefWidth="289.0" text="Number of generations in genetic algorithm" />
+                                          <TextField id="n_gen_ga" layoutX="600.0" layoutY="256.0" text="80" />
+                                          <Label layoutX="8.0" layoutY="289.0" prefHeight="16.0" prefWidth="191.0" text="Number of PLS components" />
+                                          <TextField id="n_comp_pls" layoutX="196.0" layoutY="286.0" text="20" />
+                                          <TextField id="svekla_path" layoutX="163.0" layoutY="415.0" prefHeight="24.0" prefWidth="351.0" text="./svekla" />
+                                          <Label layoutX="9.0" layoutY="419.0" text="Path to SVEKLA jar file" />
+                                          <Label layoutX="8.0" layoutY="315.0" text="LASSO L1-regularization constant (automatic tuing if zero)" />
+                                          <TextField id="lassol1" layoutX="398.0" layoutY="311.0" text="0" />
+                                          <Label layoutX="8.0" layoutY="343.0" text="Threshold for coefficients in LASSO" />
+                                          <TextField id="lassothreshold1" layoutX="243.0" layoutY="339.0" text="0.1" />
+                                          <Label layoutX="9.0" layoutY="397.0" text="Software settings">
+                                             <font>
+                                                <Font name="System Bold Italic" size="14.0" />
+                                             </font>
+                                          </Label>
+                                       </children>
+                                    </AnchorPane>
+                                </content>
+                              </ScrollPane>
+                           </children></AnchorPane>
                     </content>
                   </Tab>
                </tabs>

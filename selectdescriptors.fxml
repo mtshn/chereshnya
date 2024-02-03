@@ -19,8 +19,8 @@
                   <CheckBox id="rdkit_d" layoutX="14.0" layoutY="57.0" mnemonicParsing="false" selected="true" text="RDKit" />
                   <CheckBox id="cdk_d" layoutX="14.0" layoutY="30.0" mnemonicParsing="false" text="CDK" />
                   <CheckBox id="svekla_d" layoutX="84.0" layoutY="30.0" mnemonicParsing="false" text="Deep Learing RI for standard SP" />
-                  <CheckBox layoutX="84.0" layoutY="57.0" mnemonicParsing="false" text="Linear model RI for standard SP" />
-                  <CheckBox layoutX="14.0" layoutY="87.0" mnemonicParsing="false" text="Fingerprints" />
+                  <CheckBox id="linear_ri_d" layoutX="84.0" layoutY="57.0" mnemonicParsing="false" text="Linear model RI for standard SP" />
+                  <CheckBox id="klekota_d" layoutX="14.0" layoutY="87.0" mnemonicParsing="false" text="Klekota fingerprints" />
                   <Button id="okbutton" layoutX="252.0" layoutY="117.0" mnemonicParsing="false" text="OK" />
                   <Button id="selectbutton" layoutX="305.0" layoutY="117.0" mnemonicParsing="false" text="Select specific descriptors" />
                   <ImageView fitHeight="33.0" fitWidth="38.0" layoutX="325.0" layoutY="20.0" pickOnBounds="true" preserveRatio="true">
@@ -28,6 +28,7 @@
                         <Image url="@svekla.png" />
                      </image>
                   </ImageView>
+                  <CheckBox id="funcgroups_d" layoutX="181.0" layoutY="87.0" mnemonicParsing="false" text="Functional groups" />
                </children>
             </Pane>
          </content>

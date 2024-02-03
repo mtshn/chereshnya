@@ -11,6 +11,8 @@ import java.util.HashSet;
 
 import org.apache.commons.lang3.SystemUtils;
 
+import ru.ac.phyche.chereshnya.PythonRunner;
+
 /**
  * 
  * Abstract class for multi-threaded computation of molecular descriptors and
@@ -60,18 +62,9 @@ public abstract class RDKitDescriptorsGeneratorAbstract extends FeaturesGenerato
 			for (int i = 0; i < nProcs; i++) {
 				ints[i] = i;
 			}
-			if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC_OSX) {
-				Arrays.stream(ints).parallel().forEach(i -> {
-					ProcessBuilder p = new ProcessBuilder("./python/bin/python3", pythonScriptFileToRunRDKit(), "" + i)
-							.inheritIO();
-					try {
-						Process pr = p.start();
-						pr.waitFor();
-					} catch (Exception e) {
-						throw (new RuntimeException(e.getMessage()));
-					}
-				});
-			}
+			Arrays.stream(ints).parallel().forEach(i -> {
+				PythonRunner.runPython(pythonScriptFileToRunRDKit(), "" + i);
+			});
 			for (int i = 0; i < nProcs; i++) {
 				try {
 					BufferedReader smiFile = new BufferedReader(new FileReader("tmpForRDKit_" + i + ".txt"));

@@ -5,6 +5,8 @@ import java.io.FileWriter;
 import java.util.HashSet;
 import java.util.Scanner;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import ru.ac.phyche.chereshnya.ChemUtils;
 
 public class SVEKLAGeneratorRI extends FeaturesGenerator {
@@ -26,12 +28,25 @@ public class SVEKLAGeneratorRI extends FeaturesGenerator {
 					fw.write(smiles[i] + "\n");
 				}
 				fw.close();
-				FileWriter sh = new FileWriter("svekla.sh");
-				sh.write("cd \"" + sveklaPath
+
+				ProcessBuilder b = null;
+				String cmd = "cd \"" + sveklaPath
 						+ "\"\njava -cp ./svekla-0.0.2-jar-with-dependencies.jar ru.ac.phyche.gcms.svekla.App2 Predict \""
-						+ smilesFile.getAbsolutePath() + "\"");
-				sh.close();
-				ProcessBuilder b = new ProcessBuilder("sh", "svekla.sh");
+						+ smilesFile.getAbsolutePath() + "\"";
+				if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC_OSX) {
+					FileWriter sh = new FileWriter("svekla.sh");
+					sh.write(cmd);
+					sh.close();
+					b = new ProcessBuilder("sh", "svekla.sh");
+				}
+				if (SystemUtils.IS_OS_WINDOWS) {
+					FileWriter bat = new FileWriter("svekla.bat");
+					cmd = cmd.replace("java", "\"./jdk-16.0.2/bin/java.exe\"");
+					bat.write(cmd);
+					bat.close();
+					b = new ProcessBuilder("cmd", "/c", "svekla.bat");
+				}
+
 				b.directory(new File("./"));
 				Process p = b.start();
 				Scanner sc = new Scanner(p.getInputStream());
