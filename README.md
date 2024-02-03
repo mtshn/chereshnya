@@ -1,4 +1,4 @@
-# chereshnya
+# CHERESHNYA
 Interactive software for quantitative structure-retentions relationships in gas chromatography  (e.g. prediction of Kovats retention indices)
 
 Work in progress, if you have any questions or want to run the software write to e-mail dm.matiushin@mail.ru
