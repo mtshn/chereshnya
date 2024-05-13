@@ -22,4 +22,4 @@ The releases include many binary dependencies:
 5) JavaFX, and many other components with permissive and open source licenses were included to JAR file via Maven. See "pom.xml" for more information.
 6) RDKit https://www.rdkit.org/ (BSD 3-Clause License) and several other dependencies with permissive licenses were installed via pip into provided Python distribution.
 
-
+The research is supported by Russian Science Foundation (project No. 22-73-10053)
