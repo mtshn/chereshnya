@@ -22,7 +22,7 @@ public class SVEKLAGeneratorRI extends FeaturesGenerator {
 		if (smilesStrings.size() != 0) {
 			try {
 				String[] smiles = smilesStrings.toArray(new String[smilesStrings.size()]);
-				File smilesFile = new File("smiles.txt");
+				File smilesFile = new File(sveklaPath, "smiles_IU24DU8BA193.txt");
 				FileWriter fw = new FileWriter(smilesFile);
 				for (int i = 0; i < smiles.length; i++) {
 					fw.write(smiles[i] + "\n");
@@ -32,7 +32,7 @@ public class SVEKLAGeneratorRI extends FeaturesGenerator {
 				ProcessBuilder b = null;
 				String cmd = "cd \"" + sveklaPath
 						+ "\"\njava -cp ./svekla-0.0.2-jar-with-dependencies.jar ru.ac.phyche.gcms.svekla.App2 Predict \""
-						+ smilesFile.getAbsolutePath() + "\"";
+						+ smilesFile.getName() + "\"";
 				if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC_OSX) {
 					FileWriter sh = new FileWriter("svekla.sh");
 					sh.write(cmd);
@@ -77,6 +77,7 @@ public class SVEKLAGeneratorRI extends FeaturesGenerator {
 					this.putPrecomputed(smiles[x], features);
 					x = x + 1;
 				}
+				sc.close();
 				if (x != smiles.length) {
 					throw new RuntimeException("RI prediction with SVEKLA failed");
 				}
