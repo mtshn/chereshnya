@@ -1,4 +1,4 @@
-1) Install JDK (version 11 or above) and Maven (version 3.6.3 or above) (see also *****). Compilation was not tested on Windows, the JAR file for Windows was cross-compiled from Linux.
+1) Install JDK (version 11 or above) and Maven (version 3.6.3 or above). Compilation was not tested on Windows, the JAR file for Windows was cross-compiled from Linux.
 
 2) Clone source code (git clone https://github.com/mtshn/chereshnya) and run following commands in the folder with pom.xml file:
 For linux:
@@ -6,7 +6,7 @@ mvn clean package -Djavacpp.platform=linux-x86_64
 Fon windows
 mvn clean package -Djavacpp.platform=windows-x86_64
 
-The chereshnya-0.0.2-jar-with-dependencies.jar  file that can be used will appear in the "target" folder.
+The chereshnya-0.0.3-alpha2-jar-with-dependencies.jar  file that can be used will appear in the "target" folder.
 
 3) Download JSME.  The unpacked files are including to the final release
 https://github.com/jsme-editor/jsme-editor.github.io/blob/main/downloads/JSME_2022-09-26.zip
