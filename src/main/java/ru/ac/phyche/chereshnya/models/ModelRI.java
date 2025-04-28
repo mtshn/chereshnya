@@ -70,9 +70,11 @@ public abstract class ModelRI {
 			float d80rel = ArUtls.delta80(relDeltas);
 			float d90rel = ArUtls.delta90(relDeltas);
 			float d95rel = ArUtls.delta95(relDeltas);
+			float x = ArUtls.percentMoreThan70(deltas);
 
-			result += "\nR2: " + r2 + " r: " + r + "\nd80abs " + d80abs + " d90abs " + d90abs + " d95abs " + d95abs
-					+ "\nd80rel " + 100f * d80rel + " d90rel " + 100f * d90rel + " d95rel " + 100f * d95rel;
+			result += "\nR2: " + r2 + " percentMoreThan70 " + x + " r: " + r + "\nd80abs " + d80abs + " d90abs "
+					+ d90abs + " d95abs " + d95abs + "\nd80rel " + 100f * d80rel + " d90rel " + 100f * d90rel
+					+ " d95rel " + 100f * d95rel;
 		}
 		if (writePredictions != null) {
 			ArUtls.savePredResults(writePredictions, smiles, labels, predictions);
@@ -127,13 +129,15 @@ public abstract class ModelRI {
 			log.write("Cross-validation started. " + nFold + " -fold " + t.format(ti));
 			log.write(fullModelInfo() + "\n");
 		}
-		for (int i = 0; i < nFold - 1; i++) {
+		for (int i = 0; i < nFold; i++) {
 			ChemDataset train = trainArray[i];
 			ChemDataset test = testArray[i];
 
 			if (log != null) {
 				log.write("Split_" + i);
-				log.write("_ _ _ Train-validation_set: " + train.size() + " ( " + train.compounds() + " compounds)");
+				log.write("_ _ _ Train-validation_set: " + train.size() + " ( " + train.compounds().size()
+						+ " compounds)\n");
+				log.write(train.compounds() + "\n");
 				log.flush();
 			}
 			ChemDataset validation = train.compoundsBasedSplitAndShuffle(toValidationSet);
@@ -146,9 +150,9 @@ public abstract class ModelRI {
 			labelsAll = ArUtls.mergeArrays(labelsAll, labels);
 			smilesAll = ArUtls.mergeArrays(smilesAll, smiles);
 		}
-		String result = accuracyMeasuresValidation(smilesAll, predictionsAll, labelsAll, allMeasures, log);
+		String result = accuracyMeasuresValidation(smilesAll, predictionsAll, labelsAll, allMeasures, null);
 		if (log != null) {
-			for (int i = 0; i < nFold - 1; i++) {
+			for (int i = 0; i < nFold; i++) {
 				log.write("Subset " + i + " " + results[i] + "\n");
 			}
 			log.write("\n\n\n");
@@ -156,11 +160,10 @@ public abstract class ModelRI {
 			log.write(result);
 			DateTimeFormatter t = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 			LocalDateTime ti = LocalDateTime.now();
-			log.write("Cross-validation started. " + nFold + " -fold " + t.format(ti) + "\n");
+			log.write("\nCross-validation finished. " + nFold + " -fold " + t.format(ti) + "\n");
 			log.flush();
 		}
 		return accuracyMeasuresValidation(smilesAll, predictionsAll, labelsAll, allMeasures, log);
-
 	}
 
 	public static Pair<ChemDataset[], ChemDataset[]> trainSetssAndSetsArraysForCV(ChemDataset data, int nFold,
@@ -185,7 +188,7 @@ public abstract class ModelRI {
 			split[i] = clone.compoundsBasedSplitAndShuffle(sizeI);
 		}
 		split[nFold - 1] = clone;
-		for (int i = 0; i < nFold - 1; i++) {
+		for (int i = 0; i < nFold; i++) {
 			ChemDataset train = clone1.copy();
 			ChemDataset test = split[i];
 			if (makeCanonicalAll) {
@@ -194,6 +197,8 @@ public abstract class ModelRI {
 				if ((train.countIdenticalByInchi(test) != 0) || (test.countIdenticalByInchi(train) != 0)) {
 					throw (new RuntimeException("Overlap between train and test is non-zero"));
 				}
+			} else {
+				train.filterIdenticalFastNoCanonical(test);
 			}
 			train = train.shuffle();
 			trainArray[i] = train;

@@ -12,6 +12,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +53,8 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.ScatterChart;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -86,6 +90,8 @@ import ru.ac.phyche.chereshnya.featuregenerators.FeaturesGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.FuncGroupsCDKGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.LinearModelRIGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.MQNDescriptorsGenerator;
+import ru.ac.phyche.chereshnya.featuregenerators.MetlinHPLCRTGenerator;
+import ru.ac.phyche.chereshnya.featuregenerators.PrecomputedFeaturesFromFileGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.PreprocessedFeaturesGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.RDKitDescriptorsGenerator;
 import ru.ac.phyche.chereshnya.featuregenerators.SVEKLAGeneratorRI;
@@ -124,7 +130,8 @@ import netscape.javascript.JSObject;
 public class JavaFXGUI extends Application {
 
 	private static class Mdl {
-		public ModelRI model = null;
+		public QSRRModelRI model = null;
+		public Scale01FeaturesPreprocessor scale = null;
 	}
 
 	private static class Gen {
@@ -136,6 +143,87 @@ public class JavaFXGUI extends Application {
 			lst.add(new RDKitDescriptorsGenerator());
 			g = new CombinedFeaturesGenerator(lst.toArray(new FeaturesGenerator[lst.size()]));
 		}
+	}
+
+	private static class LinearModelPredictOnly extends QSRRModelRI implements LinearModelRI {
+		private float[] coef;
+		private String[] descriptors;
+		private String propPath;
+		private String sveklaPath;
+
+		@Override
+		public String[] getDescriptorNames() {
+			return descriptors;
+		}
+
+		public LinearModelPredictOnly(float[] coef, String[] descriptors, String propPath, String sveklaPath) {
+			super(null);
+			this.coef = coef;
+			this.descriptors = descriptors;
+			this.propPath = propPath;
+			this.sveklaPath = sveklaPath;
+		}
+
+		public LinearModelPredictOnly(FeaturesGenerator gen) {
+			super(gen);
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public float[] unscaledModelCoefficientsWithB(float[] min, float[] max) {
+			return coef;
+		}
+
+		@Override
+		public float[] predict(String[] smiles) {
+			float[][] desc;
+			try {
+				desc = computeDescriptors(smiles, descriptors, propPath, sveklaPath);
+			} catch (CDKException e) {
+				e.printStackTrace();
+				return null;
+			}
+			float[] result = new float[smiles.length];
+			for (int i = 0; i < desc.length; i++) {
+				float x = coef[0];
+				for (int j = 0; j < desc[0].length; j++) {
+					x = x + coef[j + 1] * desc[i][j];
+				}
+				result[i] = x;
+			}
+			return result;
+		}
+
+		@Override
+		public void train(ChemDataset trainSet, ChemDataset validationSet) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void save(String directory) throws IOException {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void load(String directory) throws IOException {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public String modelType() {
+			return "Linear model (predict only)";
+		}
+
+		@Override
+		public String fullModelInfo() {
+			return "Linear model (predict only)";
+		}
+
+		@Override
+		public ModelRI createSimilar() {
+			throw new UnsupportedOperationException();
+		}
+
 	}
 
 	private static String predictedVsObservedAccuracy(ArrayList<Pair<Float, Float>> predictedVsObserved) {
@@ -284,7 +372,7 @@ public class JavaFXGUI extends Application {
 		LASSORI modelFinal = new LASSORI(gen);
 		modelFinal.setl1(l1);
 		modelFinal.train(ds, ChemDataset.empty());
-		String accuracy = modelFinal.crossValidation(ds, 0, 10, null, false, false, false);
+		String accuracy = modelFinal.crossValidation(ds, 0, 10, null, false, false, true);
 		float[] coef = modelFinal.unscaledModelCoefficientsWithB(scale.getMin(), scale.getMax());
 
 		String eq = coef[0] + " + ";
@@ -296,6 +384,7 @@ public class JavaFXGUI extends Application {
 		}
 		eq = eq + " (l1 = " + l1 + " )";
 		model.model = modelFinal;
+		model.scale = scale;
 		return new String[] { eq, accuracy };
 	}
 
@@ -323,38 +412,93 @@ public class JavaFXGUI extends Application {
 			}
 			var = (float) Math.sqrt(var / ds.size());
 			float varMinMax = var / (max[i] - min[i]);
-			s = s + gen.getName(i) + " MIN: " + min[i] + " MIN: " + max[i] + " AVERAGE: " + average + " STDEV: " + var
-					+ "STDEV_SCALED: " + varMinMax + "\n";
+			s = s + gen.getName(i) + " MIN: " + min[i] + " MAX: " + max[i] + " AVERAGE: " + average + " STDEV: " + var
+					+ " STDEV_SCALED: " + varMinMax + "\n";
 		}
 		return s;
 	}
 
-	private static float computeDescriptor(String smiles, String descriptorName) throws CDKException {
-		String smilesCan = ChemUtils.canonical(smiles, false);
-		smilesCan = ChemUtils.canonical(smilesCan, false);
-		if (descriptorName.contains("CDK_")) {
-			float[] d = ChemUtils.descriptors(smilesCan, new String[] { descriptorName.split("CDK\\_")[1] });
-			return (d[0]);
-		} else {
-			ArrayList<FeaturesGenerator> lst = new ArrayList<FeaturesGenerator>();
-			lst.add(new CDKDescriptorsGenerator());
-			lst.add(new RDKitDescriptorsGenerator());
-			lst.add(new FuncGroupsCDKGenerator());
-			lst.add(new MQNDescriptorsGenerator());
-			lst.add((new CDKFingerprintsGenerator(ChemUtils.FingerprintsType.KLEKOTA_ADDITIVE)));
-			lst.add(new LinearModelRIGenerator());
+	private static FeaturesGenerator featuresGeneratorByNames(String[] descriptorNames, String propertiesFile,
+			String sveklaPath) {
+		HashSet<String> d = new HashSet<String>();
+		d.addAll(Arrays.asList(descriptorNames));
+		FeaturesGenerator[] a = new FeaturesGenerator[] { new CDKDescriptorsGenerator(),
+				new RDKitDescriptorsGenerator(), new FuncGroupsCDKGenerator(),
+				new CDKFingerprintsGenerator(ChemUtils.FingerprintsType.KLEKOTA_ADDITIVE), new LinearModelRIGenerator(),
+				new PrecomputedFeaturesFromFileGenerator(propertiesFile), new MetlinHPLCRTGenerator(),
+				new SVEKLAGeneratorRI(sveklaPath), new FuncGroupsCDKGenerator()
 
-			CombinedFeaturesGenerator gen1 = new CombinedFeaturesGenerator(
-					lst.toArray(new FeaturesGenerator[lst.size()]));
-			float[] d = gen1.featuresForMolNoPrecompute(smilesCan);
-			String[] names = gen1.getNames();
-			for (int i = 0; i < names.length; i++) {
-				if (names[i].equals(descriptorName)) {
-					return (d[i]);
+		};
+		ArrayList<FeaturesGenerator> lst = new ArrayList<FeaturesGenerator>();
+		for (FeaturesGenerator fg : a) {
+			HashSet<String> d1 = new HashSet<String>();
+			d1.addAll(Arrays.asList(fg.getNames()));
+			d1.retainAll(d);
+			if (d1.size() > 0) {
+				lst.add(fg);
+			}
+		}
+		CombinedFeaturesGenerator gen1 = new CombinedFeaturesGenerator(lst.toArray(new FeaturesGenerator[lst.size()]));
+		return gen1;
+	}
+
+	private static float[][] computeDescriptors(String[] smiles, String[] descriptorNames, String propertiesFile,
+			String sveklaPath) throws CDKException {
+		float[][] result = new float[smiles.length][];
+		FeaturesGenerator gen1 = featuresGeneratorByNames(descriptorNames, propertiesFile, sveklaPath);
+		String[] smilesCan = new String[smiles.length];
+		for (int k = 0; k < smiles.length; k++) {
+			smilesCan[k] = ChemUtils.canonical(smiles[k], false);
+		}
+		gen1.precompute(smilesCan);
+		for (int k = 0; k < smiles.length; k++) {
+			result[k] = new float[descriptorNames.length];
+			for (int j = 0; j < descriptorNames.length; j++) {
+				String descriptorName = descriptorNames[j];
+				if (descriptorName.contains("CDK_")) {
+					float[] d = ChemUtils.descriptors(smilesCan[k], new String[] { descriptorName.split("CDK\\_")[1] });
+					result[k][j] = (d[0]);
+				} else {
+					float[] d = gen1.featuresForMol(smilesCan[k]);
+					String[] names = gen1.getNames();
+					for (int i = 0; i < names.length; i++) {
+						if (names[i].equals(descriptorName)) {
+							result[k][j] = (d[i]);
+						}
+					}
 				}
 			}
 		}
-		return 0;
+		return result;
+	}
+
+	private static float[] computeDescriptors(String smiles, String[] descriptorNames, String propertiesFile,
+			String sveklaPath) throws CDKException {
+		float[] result = new float[descriptorNames.length];
+		FeaturesGenerator gen1 = featuresGeneratorByNames(descriptorNames, propertiesFile, sveklaPath);
+		for (int j = 0; j < descriptorNames.length; j++) {
+			String descriptorName = descriptorNames[j];
+			String smilesCan = ChemUtils.canonical(smiles, false);
+			smilesCan = ChemUtils.canonical(smilesCan, false);
+			if (descriptorName.contains("CDK_")) {
+				float[] d = ChemUtils.descriptors(smilesCan, new String[] { descriptorName.split("CDK\\_")[1] });
+				result[j] = (d[0]);
+			} else {
+				float[] d = gen1.featuresForMolNoPrecompute(smilesCan);
+				String[] names = gen1.getNames();
+				for (int i = 0; i < names.length; i++) {
+					if (names[i].equals(descriptorName)) {
+						result[j] = (d[i]);
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private static float computeDescriptor(String smiles, String descriptorName, String propertiesFile,
+			String sveklaPath) throws CDKException {
+		return computeDescriptors(smiles, new String[] { descriptorName }, propertiesFile, sveklaPath)[0];
 	}
 
 	private static void showMessageWithError(Exception e) {
@@ -388,33 +532,60 @@ public class JavaFXGUI extends Application {
 		scale.train(gen, ds);
 		gen = new PreprocessedFeaturesGenerator(gen, scale);
 
-		ModelRI modelFinal = new OLSRI(gen);
+		QSRRModelRI modelFinal = new OLSRI(gen);
 
 		if (l2 > 0) {
 			modelFinal = new RidgeRI(gen, l2);
 		}
 
 		FileWriter cv = new FileWriter("cv_log.tmp");
-		System.out.print("n_features " + gen.getNumFeatures());
-		String accuracy = modelFinal.crossValidation(ds, 0, 10, cv, false, false, false);
-		System.out.println(";");
+		System.out.println("n_features " + gen.getNumFeatures());
+		cv.write("n_features " + gen.getNumFeatures() + "\n");
+		for (int i = 0; i < gen.getNumFeatures(); i++) {
+			cv.write(gen.getName(i) + " ");
+		}
+		cv.write("\n");
+		cv.write("All data set size: " + ds.size() + " n_compounds " + ds.compounds().size() + "\n");
+		String accuracy = modelFinal.crossValidation(ds, 0, 10, cv, false, true, true);
 		cv.close();
+		// Files.copy(Paths.get("cv_log.tmp"), Paths.get("cv_log.tmp" +
+		// Math.round(Math.random() * 1e10)));
+		String[] split = accuracy.split("\\s+");
+		accuracy = "";
+		for (int i = 0; i < 15; i++) {
+			accuracy = accuracy + split[i] + " ";
+		}
+		if (OLSRI.class.isInstance(modelFinal)) {
+			float ftest = ((OLSRI) modelFinal).getFTest();
+			float pvalue = ((OLSRI) modelFinal).getPValue();
+			accuracy = accuracy + "F-factor(f-test): " + ftest + " ";
+			accuracy = accuracy + "p-value(regression significance): " + pvalue;
+		}
 		float[] coef = ((LinearModelRI) modelFinal).unscaledModelCoefficientsWithB(scale.getMin(), scale.getMax());
-
-		String eq = coef[0] + " + ";
+		float[] stddev = null;
+		String q = "";
+		if (modelFinal.getClass().equals(OLSRI.class)) {
+			stddev = ((OLSRI) modelFinal).unscaledModelCoefficientsWithBStDevs(scale.getMin(), scale.getMax());
+			q = " ( " + stddev[0] + " ) ";
+		}
+		String eq = coef[0] + q + " + ";
 		for (int i = 1; i < coef.length; i++) {
 			eq = eq + gen.getName(i - 1) + " * " + coef[i];
+			if (stddev != null) {
+				eq = eq + " ( " + stddev[i] + " ) ";
+			}
 			if (i != coef.length - 1) {
 				eq = eq + " + ";
 			}
 		}
 
 		model.model = modelFinal;
+		model.scale = scale;
 		return new String[] { eq, accuracy };
 	}
 
 	private static void computeDescriptorsForDataSet(String datasetfilename, String outputfilename,
-			FeaturesGenerator gen) throws IOException {
+			String[] descriptorNames, String propertiesFile, String sveklaPath) throws IOException, CDKException {
 		BufferedReader br = new BufferedReader(new FileReader(datasetfilename));
 		String s = br.readLine();
 		ArrayList<String> smiles = new ArrayList<String>();
@@ -431,15 +602,16 @@ public class JavaFXGUI extends Application {
 		}
 		br.close();
 
-		float features[][] = gen.featuresNoPrecompute(smiles.toArray(new String[smiles.size()]));
+		float features[][] = computeDescriptors(smiles.toArray(new String[smiles.size()]), descriptorNames,
+				propertiesFile, sveklaPath);
 
 		FileWriter fw1 = new FileWriter(outputfilename);
 		FileWriter fw2 = new FileWriter("descriptors.tmp.csv");
 
 		fw1.write("SMILES ");
 		for (int i = 0; i < features[0].length; i++) {
-			fw1.write(gen.getName(i) + ((i == features[0].length - 1) ? "\n" : " "));
-			fw2.write(gen.getName(i) + ((i == features[0].length - 1) ? "\n" : ","));
+			fw1.write(descriptorNames[i] + ((i == features[0].length - 1) ? "\n" : " "));
+			fw2.write(descriptorNames[i] + ((i == features[0].length - 1) ? "\n" : ","));
 		}
 
 		for (int i = 0; i < features.length; i++) {
@@ -485,7 +657,7 @@ public class JavaFXGUI extends Application {
 		TextField lowvar = (TextField) vBox.lookup("#lowvar");
 		TextField datafile = (TextField) vBox.lookup("#datafile");
 		TextField datafile2 = (TextField) vBox.lookup("#datafile2");
-
+		TextField modelfile = (TextField) vBox.lookup("#modelfilename");
 		TextField descriptorname = (TextField) vBox.lookup("#descriptorname");
 		TextField descriptorvalue = (TextField) vBox.lookup("#descriptorvalue");
 		TextField rivalue = (TextField) vBox.lookup("#rivalue");
@@ -495,6 +667,7 @@ public class JavaFXGUI extends Application {
 		TextField nRepeats = (TextField) vBox.lookup("#nrepeats");
 		TextField nCompPLS = (TextField) vBox.lookup("#n_comp_pls");
 		TextField nGenGAP = (TextField) vBox.lookup("#n_gen_ga");
+		TextField propertiesDfile = (TextField) vBox.lookup("#properties_d_file");
 
 		TextArea equations = (TextArea) vBox.lookup("#equations");
 		TextArea accuracy = (TextArea) vBox.lookup("#accuracy");
@@ -502,7 +675,8 @@ public class JavaFXGUI extends Application {
 		TextField lassoL1 = (TextField) vBox.lookup("#lassol1");
 		TextField lassoThreshold = (TextField) vBox.lookup("#lassothreshold1");
 		TextField l2field = (TextField) vBox.lookup("#l2field");
-		ComboBox<String> combobox = (ComboBox) vBox.lookup("#selectionmethod");
+		@SuppressWarnings("unchecked")
+		ComboBox<String> combobox = (ComboBox<String>) vBox.lookup("#selectionmethod");
 		CheckBox errorBarsType = (CheckBox) vBox.lookup("#errorbarstype");
 		CheckBox shuffleDescriptors = (CheckBox) vBox.lookup("#shuffledescriptors");
 		CheckBox seqaddeq = (CheckBox) vBox.lookup("#seqaddeq");
@@ -516,6 +690,7 @@ public class JavaFXGUI extends Application {
 		combobox.getItems().add("LASSO non sequental (required number of descriptors is ignored)");
 		combobox.getItems().add("Genetic algorithm");
 		combobox.getItems().add("No descriptor selection");
+		combobox.getSelectionModel().select(2);
 
 		// -fx-text-box-border: #8710e2;
 		vBox.setStyle("-fx-focus-color: #8710e2;");
@@ -531,6 +706,9 @@ public class JavaFXGUI extends Application {
 		Button buttonSelectDescriptors = (Button) vBox.lookup("#selectdescriptorsbutton");
 		Button buttonChangeDescriptors = (Button) vBox.lookup("#changedescriptorsbutton");
 		Button openButton = (Button) vBox.lookup("#openbutton");
+		Button buttonModelFileSelect = (Button) vBox.lookup("#modelfileselectbutton");
+		Button buttonModelLoad = (Button) vBox.lookup("#modelloadbutton");
+		Button buttonModelSave = (Button) vBox.lookup("#modelsavebutton");
 
 		TextArea outArea = (TextArea) vBox2.lookup("#outfield");
 		outArea.setEditable(false);
@@ -572,7 +750,9 @@ public class JavaFXGUI extends Application {
 				try {
 					String smiles = ChemUtils.canonical(jsJavaCall.smiles, false);
 					String descriptorName = descriptorname.getText();
-					descriptorvalue.setText(computeDescriptor(smiles, descriptorName) + "");
+					descriptorvalue.setText(
+							computeDescriptor(smiles, descriptorName, propertiesDfile.getText(), sveklaPath.getText())
+									+ "");
 				} catch (Exception e) {
 					e.printStackTrace();
 					showMessageWithError(e);
@@ -586,11 +766,12 @@ public class JavaFXGUI extends Application {
 				try {
 					String smiles = ChemUtils.canonical(jsJavaCall.smiles, false);
 					String s2 = "";
-					QSRRModelRI m = (QSRRModelRI) model.model;
-					String[] descriptorNames = m.getGen().getNames();
+					QSRRModelRI m = model.model;
+					String[] descriptorNames = m.getDescriptorNames();
+					float[] d = computeDescriptors(smiles, descriptorNames, propertiesDfile.getText(),
+							sveklaPath.getText());
 					for (int i = 0; i < descriptorNames.length; i++) {
-						float d = computeDescriptor(smiles, descriptorNames[i]);
-						s2 = s2 + descriptorNames[i] + " " + d + "\n";
+						s2 = s2 + descriptorNames[i] + " " + d[i] + "\n";
 					}
 					outArea.setText(s2);
 					resultsStage.show();
@@ -633,7 +814,9 @@ public class JavaFXGUI extends Application {
 						CheckBox sveklaD = (CheckBox) vBox1.lookup("#svekla_d");
 						CheckBox klekotaD = (CheckBox) vBox1.lookup("#klekota_d");
 						CheckBox linearriD = (CheckBox) vBox1.lookup("#linear_ri_d");
+						CheckBox metlinD = (CheckBox) vBox1.lookup("#metlin_rt_d");
 						CheckBox funcgroupsD = (CheckBox) vBox1.lookup("#funcgroups_d");
+						CheckBox propertiesD = (CheckBox) vBox1.lookup("#properties_d");
 
 						ArrayList<FeaturesGenerator> lst = new ArrayList<FeaturesGenerator>();
 						if (rdkitD.selectedProperty().get()) {
@@ -651,8 +834,14 @@ public class JavaFXGUI extends Application {
 						if (linearriD.selectedProperty().get()) {
 							lst.add(new LinearModelRIGenerator());
 						}
+						if (metlinD.selectedProperty().get()) {
+							lst.add(new MetlinHPLCRTGenerator());
+						}
 						if (funcgroupsD.selectedProperty().get()) {
 							lst.add(new FuncGroupsCDKGenerator());
+						}
+						if (propertiesD.selectedProperty().get()) {
+							lst.add(new PrecomputedFeaturesFromFileGenerator(propertiesDfile.getText()));
 						}
 						gen1.g = new CombinedFeaturesGenerator(lst.toArray(new FeaturesGenerator[lst.size()]));
 						gen1.selectedDescriptors = new ArrayList<Integer>();
@@ -788,9 +977,9 @@ public class JavaFXGUI extends Application {
 			@Override
 			public void handle(ActionEvent actionEvent) {
 				try {
-					QSRRModelRI m = (QSRRModelRI) model.model;
-					FeaturesGenerator g = m.getGen();
-					computeDescriptorsForDataSet(datafile2.getText(), outFileDescriptors.getText(), g);
+					QSRRModelRI m = model.model;
+					computeDescriptorsForDataSet(datafile2.getText().trim(), outFileDescriptors.getText(),
+							m.getDescriptorNames(), propertiesDfile.getText().trim(), sveklaPath.getText());
 					computeHeatmap();
 					InputStream stream = new FileInputStream("./heatmap.png");
 					Image image = new Image(stream);
@@ -811,7 +1000,7 @@ public class JavaFXGUI extends Application {
 			@Override
 			public void handle(ActionEvent actionEvent) {
 				try {
-					String filename = datafile2.getText();
+					String filename = datafile2.getText().trim();
 					BufferedReader br = new BufferedReader(new FileReader(filename));
 					String s = br.readLine();
 					String s2 = "";
@@ -866,7 +1055,7 @@ public class JavaFXGUI extends Application {
 
 					int nTry = Integer.parseInt(nRepeats.getText());
 					for (int cc = 0; cc < nTry; cc++) {
-						ds = ChemDataset.loadFromFile(datafile.getText());
+						ds = ChemDataset.loadFromFile(datafile.getText().trim());
 						ds.makeCanonicalAll(false);
 						ds.makeCanonicalAll(false);
 						String info = "N_molecules_init = " + ds.size() + "; ";
@@ -903,8 +1092,23 @@ public class JavaFXGUI extends Application {
 						g.precompute(ds);
 						info = info + "N_descriptors_preselected = " + g.getNumFeatures() + ";\n";
 						equations.setText(equations.getText() + info);
-
 						int n = Integer.parseInt(ndesc.getText());
+						if (n > g.getNumFeatures()) {
+							Alert a = new Alert(AlertType.ERROR);
+							String e1 = "The number of descriptors to be selected is greater"
+									+ " than the number of available (non-constant and non-highly correlated)"
+									+ " descriptors. Error!";
+							a.setContentText(e1);
+							a.show();
+							throw new RuntimeException(e1);
+						}
+						if (n > ds.size()) {
+							Alert a = new Alert(AlertType.WARNING);
+							String e1 = "The number of descriptors to be selected is greater"
+									+ " than the number of molecules! Stepwise selection won't work!";
+							a.setContentText(e1);
+							a.show();
+						}
 						if (combobox.getSelectionModel().getSelectedIndex() == 0) {
 							fs = new SeqAdditionOLSRMSE();
 						}
@@ -1024,6 +1228,98 @@ public class JavaFXGUI extends Application {
 			}
 		});
 
+		EventHandler<ActionEvent> runModelFileSelect = (new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+				FileChooser fileChooser = new FileChooser();
+				File file = fileChooser.showOpenDialog(primaryStage);
+				if (file != null) {
+					modelfile.setText(file.getAbsolutePath());
+				}
+
+			}
+		});
+
+		EventHandler<ActionEvent> runModelLoad = (new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+				try {
+					BufferedReader br = new BufferedReader(new FileReader(modelfile.getText().trim()));
+					String s = br.readLine();
+					if (!s.trim().equals("Linear model")) {
+						br.close();
+						throw new RuntimeException("Invalid file format");
+					}
+					s = br.readLine();
+					int n = Integer.parseInt(s.trim());
+
+					float[] coef = new float[n + 1];
+					String[] descriptors = new String[n];
+					float[] min = new float[n];
+					float[] max = new float[n];
+
+					s = br.readLine();
+					if (!s.trim().split("\\s+")[0].equals("Const")) {
+						br.close();
+						throw new RuntimeException("Invalid file format");
+					}
+					coef[0] = Float.parseFloat(s.trim().split("\\s+")[1]);
+
+					s = br.readLine();
+					s = br.readLine();
+					int j = 0;
+					// fw.write("Name, Coef, Min, Max\n");
+					while (s != null) {
+						if (!s.trim().equals("")) {
+							String splt[] = s.trim().split("\\s+");
+							descriptors[j] = splt[0];
+							coef[j + 1] = Float.parseFloat(splt[1]);
+							min[j] = Float.parseFloat(splt[2]);
+							max[j] = Float.parseFloat(splt[3]);
+							j = j + 1;
+						}
+						s = br.readLine();
+					}
+					model.model = new LinearModelPredictOnly(coef, descriptors, propertiesDfile.getText(),
+							sveklaPath.getText());
+					model.scale = new Scale01FeaturesPreprocessor(min, max, descriptors);
+					String x = "" + coef[0];
+					for (int k = 0; k < descriptors.length; k++) {
+						x = x + " + " + descriptors[k] + " * ";
+						x = x + coef[k + 1] + " ";
+					}
+					equations.setText(x.trim() + "\n");
+					br.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+					showMessageWithError(e);
+				}
+			}
+		});
+		EventHandler<ActionEvent> runModelSave = (new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent actionEvent) {
+				try {
+					float[] min = model.scale.getMin();
+					float[] max = model.scale.getMax();
+					float[] coef = ((LinearModelRI) model.model).unscaledModelCoefficientsWithB(min, max);
+					String[] names = model.model.getDescriptorNames();
+					FileWriter fw = new FileWriter(modelfile.getText().trim());
+					fw.write("Linear model\n");
+					fw.write(names.length + "\n");
+					fw.write("Const " + coef[0] + "\n");
+					fw.write("Name, Coef, Min, Max\n");
+					for (int i = 0; i < min.length; i++) {
+						fw.write(names[i] + " " + coef[i + 1] + " " + min[i] + " " + max[i] + "\n");
+					}
+					fw.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+					showMessageWithError(e);
+				}
+			}
+		});
+
 		button1.setOnAction(runQSRR);
 		buttonDescriptor.setOnAction(runDescriptor);
 		buttonAllDescriptors.setOnAction(runAllDescriptors);
@@ -1033,6 +1329,9 @@ public class JavaFXGUI extends Application {
 		buttonChangeDescriptors.setOnAction(runSelect);
 		buttonAllDescriptorsDataset.setOnAction(runDescriptorsAllDataset);
 		openButton.setOnAction(runOpenButton);
+		buttonModelFileSelect.setOnAction(runModelFileSelect);
+		buttonModelLoad.setOnAction(runModelLoad);
+		buttonModelSave.setOnAction(runModelSave);
 	}
 
 	public static void main(String[] args) {

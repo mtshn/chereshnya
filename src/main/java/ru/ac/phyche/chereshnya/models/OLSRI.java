@@ -21,7 +21,12 @@ import smile.regression.OLS;
 
 public class OLSRI extends QSRRModelRI implements LinearModelRI {
 
-	private LinearModel mdl = null;
+	private static class ModelWithPreproc {
+		public LinearModel m = null;
+		public boolean[] isColumnConst = null;
+	}
+
+	private ModelWithPreproc mdl = null;
 
 	public OLSRI(FeaturesGenerator gen) {
 		super(gen);
@@ -42,24 +47,25 @@ public class OLSRI extends QSRRModelRI implements LinearModelRI {
 		return features;
 	}
 
-	private LinearModel train(float[][] trainFeatures, float[] labels) throws IOException {
-		for (int j = 0; j < trainFeatures[0].length; j++) {// Adding noise to constant columns!!!!
+	private ModelWithPreproc train(float[][] trainFeatures, float[] labels) throws IOException {
+		ModelWithPreproc result = new ModelWithPreproc();
+		result.isColumnConst = new boolean[trainFeatures[0].length];
+		for (int j = 0; j < trainFeatures[0].length; j++) {
 			float x = trainFeatures[0][j];
 			boolean isconstant = true;
 			for (int i = 0; i < trainFeatures.length; i++) {
-				if (Math.abs(trainFeatures[i][j] - x) > 1E-5F) {
+				if (Math.abs(trainFeatures[i][j] - x) > 1E-3F) {
 					isconstant = false;
 				}
 			}
 			if (isconstant) {
-				int rnd = (int) Math.round(Math.random() * trainFeatures.length);
-				trainFeatures[rnd][j] += 2E-5;
+				result.isColumnConst[j] = true;
 			}
 		}
-		DataFrame dataFrame = ArUtls.toDataFrame(trainFeatures, ArUtls.mult(0.001F, labels));
+		DataFrame dataFrame = ArUtls.toDataFrame(trainFeatures, ArUtls.mult(0.001F, labels), result.isColumnConst);
 		try {
-			LinearModel m = OLS.fit(Formula.lhs("label"), dataFrame);
-			return m;
+			result.m = OLS.fit(Formula.lhs("label"), dataFrame);
+			return result;
 		} catch (Throwable e) {
 			e.printStackTrace();
 			return null;
@@ -73,7 +79,7 @@ public class OLSRI extends QSRRModelRI implements LinearModelRI {
 //			float[][] validationFeatures = this.features(validationSet);
 			float[] trainLabels = trainSet.allRetentions();
 //			float[] validationLabels = validationSet.allRetentions();
-			LinearModel b = this.train(trainFeatures, trainLabels);
+			ModelWithPreproc b = this.train(trainFeatures, trainLabels);
 			this.mdl = b;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -84,7 +90,8 @@ public class OLSRI extends QSRRModelRI implements LinearModelRI {
 	@Override
 	public float[] predict(String[] smiles) {
 		float[][] features = features(smiles);
-		float[] predictions = ArUtls.mult(1000, ArUtls.toFloatArray(mdl.predict(ArUtls.toDataFrame(features))));
+		float[] predictions = ArUtls.mult(1000,
+				ArUtls.toFloatArray(mdl.m.predict(ArUtls.toDataFrame(features, mdl.isColumnConst))));
 		return predictions;
 	}
 
@@ -114,14 +121,17 @@ public class OLSRI extends QSRRModelRI implements LinearModelRI {
 		}
 		br.close();
 		if (!s.trim().equals(this.modelType())) {
+			br.close();
 			throw new RuntimeException("Wrong model type");
 		}
 		br = new BufferedReader(new FileReader(new File(directory, "info.txt")));
 		File f = new File(directory, "model.xml");
 		XStream xstream = new XStream();
-		xstream.allowTypes(new String[] { "smile.regression.LinearModel", "smile.data.formula.Variable",
-				"smile.data.type.StructField", "smile.data.type.DoubleType" });
-		mdl = (LinearModel) xstream.fromXML(f);
+		xstream.allowTypes(new String[] { "ru.ac.phyche.chereshnya.models.OLSRI.ModelWithPreproc",
+				"smile.regression.LinearModel", "smile.data.formula.Variable", "smile.data.type.StructField",
+				"smile.data.type.DoubleType" });
+		mdl = (ModelWithPreproc) xstream.fromXML(f);
+		br.close();
 	}
 
 	@Override
@@ -141,30 +151,43 @@ public class OLSRI extends QSRRModelRI implements LinearModelRI {
 		return result;
 	}
 
-	public LinearModel getLM() {
-		return mdl;
+	public float[] modelCoefficientsStdDevsWithoutB() {
+		double[][] dev = mdl.m.ttest();
+		float[] result = new float[mdl.isColumnConst.length];
+		int k = 1;
+		for (int i = 0; i < result.length; i++) {
+			if (!mdl.isColumnConst[i]) {
+				result[i] = (float) dev[k][1];
+				k = k + 1;
+			} else {
+				result[i] = 0;
+			}
+		}
+		return ArUtls.mult(1000, result);
 	}
 
-	public float[] modelCoefficientsWithB() {
-		double[] bw = mdl.coefficients();
-		return ArUtls.mult(1000, ArUtls.toFloatArray(bw));
+	public float modelBStd() {
+		double[][] dev = mdl.m.ttest();
+		return 1000 * (float) dev[0][1];
 	}
 
 	public float[] modelCoefficientsWithoutB() {
-		double[] bw = mdl.coefficients();
-		float[] result = new float[bw.length - 1];
+		double[] bw = mdl.m.coefficients();
+		float[] result = new float[mdl.isColumnConst.length];
+		int k = 1;
 		for (int i = 0; i < result.length; i++) {
-			result[i] = (float) (1000 * bw[i + 1]);
+			if (!mdl.isColumnConst[i]) {
+				result[i] = (float) bw[k];
+				k = k + 1;
+			} else {
+				result[i] = 0;
+			}
 		}
-		return result;
+		return ArUtls.mult(1000, result);
 	}
 
 	public float modelB() {
-		return (float) (1000 * mdl.coefficients()[0]);
-	}
-
-	public float modelF() {
-		return (float) (mdl.ftest());
+		return (float) (1000 * mdl.m.coefficients()[0]);
 	}
 
 	public float[] unscaledModelCoefficientsWithB(float[] minValuesDescriptors, float[] maxValuesDescriptors) {
@@ -178,6 +201,29 @@ public class OLSRI extends QSRRModelRI implements LinearModelRI {
 		float[] bw = ArUtls.mergeArrays(new float[] { modelB() + b }, w);
 		return bw;
 	}
+
+	public float[] unscaledModelCoefficientsWithBStDevs(float[] minValuesDescriptors, float[] maxValuesDescriptors) {
+		float[] ws = this.modelCoefficientsStdDevsWithoutB();
+		float[] scales = ArUtls.mult(-1, minValuesDescriptors);
+		scales = ArUtls.ewAdd(scales, maxValuesDescriptors);
+		ws = ArUtls.ewDiv(ws, scales);
+
+		float[] bws = ArUtls.mergeArrays(new float[] { modelBStd() }, ws);
+		return bws;
+	}
+
+	public float getFTest() {
+		return (float) this.mdl.m.ftest();
+	}
+
+	public float modelF() {
+		return (float) this.mdl.m.ftest();
+	}
+
+	public float getPValue() {
+		return (float) this.mdl.m.pvalue();
+	}
+
 }
 
 //scaled=((val-min)/(max-min))

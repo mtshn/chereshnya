@@ -65,6 +65,7 @@ public class SeqAdditionBestF extends FeatureSelector.SeqAddition implements Fea
 				bestI = i;
 			}
 		}
+		System.out.println(bestF);
 		FeatureImportance e = new FeatureImportance();
 		e.name = gen.getName(bestI);
 		e.value = 1;

@@ -20,6 +20,16 @@ import smile.data.type.StructType;
 
 public class ArUtls {
 
+	public static float percentMoreThan70(float[] x) {
+		int n = 0;
+		for (int i = 0; i < x.length; i++) {
+			if (x[i] > 70) {
+				n = n + 1;
+			}
+		}
+		return 100f * (n * 1.0f) / (1.0f * x.length);
+	}
+
 	public static double[] toDoubleArray(float[] x) {
 		double[] result = new double[x.length];
 		for (int i = 0; i < x.length; i++) {
@@ -57,6 +67,32 @@ public class ArUtls {
 		for (int i = 0; i < x.length; i++) {
 			result[i] = new double[1];
 			result[i][0] = x[i];
+		}
+		return result;
+	}
+
+	public static int nTrues(boolean[] x) {
+		int n = 0;
+		for (boolean b : x) {
+			if (b) {
+				n = n + 1;
+			}
+		}
+		return n;
+	}
+
+	public static double[][] toDoubleArray2d(float[][] x, boolean[] excludeColumns) {
+		int nExclude = nTrues(excludeColumns);
+		double[][] result = new double[x.length][];
+		for (int i = 0; i < x.length; i++) {
+			result[i] = new double[x[i].length - nExclude];
+			int k = 0;
+			for (int j = 0; j < x[i].length; j++) {
+				if (!excludeColumns[j]) {
+					result[i][k] = x[i][j];
+					k = k + 1;
+				}
+			}
 		}
 		return result;
 	}
@@ -310,6 +346,9 @@ public class ArUtls {
 		float[] b = a.clone();
 		Arrays.sort(b);
 		int n = Math.round(a.length * f);
+		if (n >= a.length) {
+			n = a.length - 1;
+		}
 		return b[n];
 	}
 
@@ -467,6 +506,17 @@ public class ArUtls {
 		return a;
 	}
 
+	public static DataFrame toDataFrame(float[][] features, float[] labels, boolean[] excludeColumns) {
+		double[][] featuresDouble = toDoubleArray2d(features, excludeColumns);
+		double[][] labelsDouble = toDoubleArray2d(labels);
+		String[] names = intStrings(features[0].length);
+		if (features.length != labels.length) {
+			throw (new RuntimeException("Wrong length of arrays"));
+		}
+		DataFrame dataFrame = DataFrame.of(labelsDouble, "label").merge(DataFrame.of(featuresDouble, names));
+		return dataFrame;
+	}
+
 	public static DataFrame toDataFrame(float[][] features, float[] labels) {
 		double[][] featuresDouble = toDoubleArray2d(features);
 		double[][] labelsDouble = toDoubleArray2d(labels);
@@ -480,6 +530,10 @@ public class ArUtls {
 
 	public static DataFrame toDataFrame(float[][] features) {
 		return toDataFrame(features, new float[features.length]);
+	}
+
+	public static DataFrame toDataFrame(float[][] features, boolean[] excludeColumns) {
+		return toDataFrame(features, new float[features.length], excludeColumns);
 	}
 
 	public static DataFrame toDataFrame(float[] features) {

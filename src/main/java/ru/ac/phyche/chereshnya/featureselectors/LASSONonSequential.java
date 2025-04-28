@@ -60,10 +60,10 @@ public class LASSONonSequential extends FeatureSelector implements FeatureImport
 		ArrayList<Integer> selectedDescriptors = new ArrayList<Integer>();
 		ArrayList<FeatureImportance> importancesAL = new ArrayList<FeatureImportance>();
 		for (int i = 0; i < w.length; i++) {
-			if (w[i] > threshold) {
+			if (Math.abs(w[i]) > threshold) {
 				FeatureImportance x = new FeatureImportance();
 				x.name = gen.getName(i);
-				x.value = w[i];
+				x.value = Math.abs(w[i]);
 				importancesAL.add(x);
 				selectedDescriptors.add(i);
 			}

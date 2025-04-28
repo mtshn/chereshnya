@@ -29,6 +29,8 @@
                      </image>
                   </ImageView>
                   <CheckBox id="funcgroups_d" layoutX="181.0" layoutY="87.0" mnemonicParsing="false" text="Functional groups" />
+                  <CheckBox id="properties_d" layoutX="322.0" layoutY="30.0" mnemonicParsing="false" text="Precomputed properties" />
+                  <CheckBox id="metlin_rt_d" layoutX="322.0" layoutY="57.0" mnemonicParsing="false" text="HPLC RT (min)" />
                </children>
             </Pane>
          </content>

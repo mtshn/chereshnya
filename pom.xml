@@ -3,32 +3,11 @@
 
 	<groupId>ru.ac.phyche</groupId>
 	<artifactId>chereshnya</artifactId>
-	<version>0.0.2</version>
+	<version>0.0.3-alpha2</version>
 	<packaging>jar</packaging>
 
 	<name>chereshnya</name>
 	<url>http://maven.apache.org</url>
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-				</configuration>
-				<executions>
-					<execution>
-						<id>make-assembly</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -99,7 +78,7 @@
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-web</artifactId>
 			<version>19</version>
-                        <classifier>win</classifier>
+            <classifier>win</classifier>
 		</dependency>
 		<dependency>
 			<groupId>org.openjfx</groupId>
@@ -158,7 +137,7 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-swing</artifactId>
-			<version>19</version>
+			<version>19</version> 
                         <classifier>linux</classifier>
 		</dependency>
 		<dependency>

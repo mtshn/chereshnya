@@ -425,6 +425,18 @@ public class ChemDataset {
 		this.data = retainData.toArray(new DatasetEntry[retainData.size()]);
 	}
 
+	public void filterIdenticalFastNoCanonical(ChemDataset second) throws CDKException {
+		ArrayList<DatasetEntry> retainData = new ArrayList<DatasetEntry>();
+		HashSet<String> b = second.compounds();
+		for (int i = 0; i < this.data.length; i++) {
+			if (!b.contains(data[i].getSmiles())) {
+				retainData.add(this.getEntry(i));
+			}
+		}
+		this.data = retainData.toArray(new DatasetEntry[retainData.size()]);
+	}
+
+	
 	/**
 	 * Remove from THIS data set all compounds that are contained in second data
 	 * set! After this method will be no compounds in both data set simultaneously.
@@ -510,7 +522,11 @@ public class ChemDataset {
 	 */
 	public ChemDataset makeCanonicalAll(boolean stereochemistry) throws CDKException {
 		for (int i = 0; i < this.data.length; i++) {
+			try {
 			this.getEntry(i).setSmiles(ChemUtils.canonical(this.getSmiles(i), stereochemistry));
+			} catch(Throwable e) {
+				throw new CDKException("Error canonicalizing this SMILES "+this.getSmiles(i)+" "+e.getMessage());
+			}
 		}
 		return this;
 	}

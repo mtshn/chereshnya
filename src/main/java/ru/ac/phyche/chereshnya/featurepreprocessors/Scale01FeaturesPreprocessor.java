@@ -27,6 +27,16 @@ public class Scale01FeaturesPreprocessor extends FeaturesPreprocessor {
 	private float[] max = new float[] {};
 	private String[] names = null;
 
+	public Scale01FeaturesPreprocessor() {
+		
+	}
+	
+	public Scale01FeaturesPreprocessor(float[] min, float[] max, String[] names) {
+		this.min = min;
+		this.max = max;
+		this.names = names;
+	}
+
 	/**
 	 * 
 	 * @return array of min values for all features

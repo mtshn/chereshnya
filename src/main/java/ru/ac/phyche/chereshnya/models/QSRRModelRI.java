@@ -25,6 +25,11 @@ public abstract class QSRRModelRI extends ModelRI {
 		return gen;
 	}
 
+	public String[] getDescriptorNames() {
+		return gen.getNames();
+	}
+
+	
 	public void setGen(FeaturesGenerator gen) {
 		this.gen = gen;
 	}

@@ -58,6 +58,5 @@ public class PreprocessedFeaturesGenerator extends FeaturesGenerator {
 
 	public Pair<FeaturesGenerator, FeaturesPreprocessor> getGenPreproc() {
 		return Pair.of(gen_, preproc_);
-	}
-
+	}	
 }

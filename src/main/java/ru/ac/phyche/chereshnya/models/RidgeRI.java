@@ -20,12 +20,19 @@ import smile.regression.LinearModel;
 import smile.regression.RidgeRegression;
 
 public class RidgeRI extends QSRRModelRI implements LinearModelRI {
+
+	private static class ModelWithPreproc {
+		public LinearModel m = null;
+		public boolean[] isColumnConst = null;
+	}
+
 	private static final QSRRModelRI.AccuracyMeasure accuracyMeasureTuning = QSRRModelRI.AccuracyMeasure.MDAE;
 
 	private static final float[] l2Range = new float[] { 1E-9f, 1E5f };
 
-	private LinearModel mdl = null;
 	private float l2 = 0.0001f;
+
+	private ModelWithPreproc mdl = null;
 
 	public RidgeRI(FeaturesGenerator gen) {
 		super(gen);
@@ -76,32 +83,35 @@ public class RidgeRI extends QSRRModelRI implements LinearModelRI {
 		return features;
 	}
 
-	private LinearModel train(Param p, float[][] trainFeatures, float[] labels) throws IOException {
-		for (int j = 0; j < trainFeatures[0].length; j++) {// Adding noise to constant columns!!!!
+	private ModelWithPreproc train(Param p, float[][] trainFeatures, float[] labels) throws IOException {
+		ModelWithPreproc result = new ModelWithPreproc();
+		result.isColumnConst = new boolean[trainFeatures[0].length];
+		for (int j = 0; j < trainFeatures[0].length; j++) {
 			float x = trainFeatures[0][j];
 			boolean isconstant = true;
 			for (int i = 0; i < trainFeatures.length; i++) {
-				if (Math.abs(trainFeatures[i][j] - x) > 1E-5F) {
+				if (Math.abs(trainFeatures[i][j] - x) > 1E-3F) {
 					isconstant = false;
 				}
 			}
 			if (isconstant) {
-				int rnd = (int) Math.round(Math.random() * trainFeatures.length);
-				trainFeatures[rnd][j] += 2E-5;
+				result.isColumnConst[j] = true;
 			}
 		}
 
-		DataFrame dataFrame = ArUtls.toDataFrame(trainFeatures, ArUtls.mult(0.001F, labels));
+		DataFrame dataFrame = ArUtls.toDataFrame(trainFeatures, ArUtls.mult(0.001F, labels), result.isColumnConst);
 		try {
-			return RidgeRegression.fit(Formula.lhs("label"), dataFrame, p.l2);
+			result.m = RidgeRegression.fit(Formula.lhs("label"), dataFrame, p.l2);
+			return result;
 		} catch (Throwable e) {
 			e.printStackTrace();
 			return null;
 		}
 	}
 
-	private String validate(LinearModel lm, float[][] features, float[] labels) {
-		float[] predictions = ArUtls.mult(1000, ArUtls.toFloatArray(lm.predict(ArUtls.toDataFrame(features))));
+	private String validate(ModelWithPreproc lm, float[][] features, float[] labels) {
+		float[] predictions = ArUtls.mult(1000,
+				ArUtls.toFloatArray(lm.m.predict(ArUtls.toDataFrame(features, lm.isColumnConst))));
 		String accuracyMeasures = QSRRModelRI.accuracyMeasuresValidation(predictions, labels);
 		System.out.println(accuracyMeasures);
 		return accuracyMeasures;
@@ -124,7 +134,7 @@ public class RidgeRI extends QSRRModelRI implements LinearModelRI {
 				}
 				for (int n = 0; n < getHyperparamsTuneAttempts(); n++) {
 					Param p = Param.rnd();
-					LinearModel b = this.train(p, trainFeatures, trainLabels);
+					ModelWithPreproc b = this.train(p, trainFeatures, trainLabels);
 					if (b != null) {
 						String accuracyMeasures = this.validate(b, validationFeatures, validationLabels);
 						float accuracy = QSRRModelRI.accuracy(accuracyMeasureTuning, accuracyMeasures);
@@ -148,7 +158,7 @@ public class RidgeRI extends QSRRModelRI implements LinearModelRI {
 			}
 			Param p = new Param();
 			p.l2 = this.l2;
-			LinearModel b = this.train(p, trainFeatures, trainLabels);
+			ModelWithPreproc b = this.train(p, trainFeatures, trainLabels);
 			this.mdl = b;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -159,7 +169,8 @@ public class RidgeRI extends QSRRModelRI implements LinearModelRI {
 	@Override
 	public float[] predict(String[] smiles) {
 		float[][] features = features(smiles);
-		float[] predictions = ArUtls.mult(1000, ArUtls.toFloatArray(mdl.predict(ArUtls.toDataFrame(features))));
+		float[] predictions = ArUtls.mult(1000,
+				ArUtls.toFloatArray(mdl.m.predict(ArUtls.toDataFrame(features, mdl.isColumnConst))));
 		return predictions;
 	}
 
@@ -202,9 +213,10 @@ public class RidgeRI extends QSRRModelRI implements LinearModelRI {
 
 		File f = new File(directory, "model.xml");
 		XStream xstream = new XStream();
-		xstream.allowTypes(new String[] { "smile.regression.LinearModel", "smile.data.formula.Variable",
-				"smile.data.type.StructField", "smile.data.type.DoubleType" });
-		mdl = (LinearModel) xstream.fromXML(f);
+		xstream.allowTypes(new String[] { "ru.ac.phyche.chereshnya.models.RidgeRI.ModelWithPreproc",
+				"smile.regression.LinearModel", "smile.data.formula.Variable", "smile.data.type.StructField",
+				"smile.data.type.DoubleType" });
+		mdl = (ModelWithPreproc) xstream.fromXML(f);
 	}
 
 	@Override
@@ -226,19 +238,29 @@ public class RidgeRI extends QSRRModelRI implements LinearModelRI {
 	}
 
 	public float[] modelCoefficientsWithoutB() {
-		double[] w = mdl.coefficients();
-		return ArUtls.mult(1000, ArUtls.toFloatArray(w));
+		double[] w = mdl.m.coefficients();
+		float[] result = new float[mdl.isColumnConst.length];
+		int k = 0;
+		for (int i = 0; i < result.length; i++) {
+			if (mdl.isColumnConst[i]) {
+				result[i] = 0;
+			} else {
+				result[i] = (float)w[k];
+				k = k + 1;
+			}
+		}
+		return ArUtls.mult(1000, result);
 	}
 
 	public float modelB() {
-		return (float) (1000 * mdl.intercept());
+		return (float) (1000 * mdl.m.intercept());
 	}
 
 	public void setl2(float l2) {
 		this.l2 = l2;
 	}
 
-	public float getl1() {
+	public float getl2() {
 		return l2;
 	}
 

@@ -9,7 +9,7 @@ public class JSJavaCall {
 	public String oldSmiles = "X";
 
 	public void jsjavacall(String smiles) {
-		System.out.println(smiles);
+		//System.out.println(smiles);
 		String canonicalSmiles;
 		try {
 			canonicalSmiles = ChemUtils.canonical(smiles, false);
