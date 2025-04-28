@@ -3,6 +3,8 @@ Interactive software for quantitative structure-retentions relationships in gas 
 
 Work in progress, if you have any questions or want to run the software write to e-mail dm.matiushin@mail.ru
 
+**For any use of this software in academic research, please cite the following work:** Sholokhova A. Y., Matyushin D. D., Shashkov M. V. Quantitative structure-retention relationships for pyridinium-based ionic liquids used as gas chromatographic stationary phases: Convenient software and assessment of reliability of the results //Journal of Chromatography A. – 2024. – Vol. 1730. – P. 465144. 10.1016/j.chroma.2024.465144
+
 **Download here:** https://github.com/mtshn/chereshnya/releases  \
 **Windows:** download and unpack release from this site, run **install.bat** (it will install Microsoft Visual C++ redistributable packages), then run **chereshnya.bat**\
 Probably (if you have installed many other software before) the **chereshnya.bat** will work even without installation. Java is bundled to release!\
